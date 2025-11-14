@@ -1,0 +1,8 @@
+[dev]
+  command = "vite preview"
+  targetPort = 4173
+  publish = "public"
+  dev = true
+
+[build]
+functions = "./functions"

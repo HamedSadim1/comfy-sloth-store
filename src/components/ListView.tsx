@@ -1,0 +1,90 @@
+import React from "react";
+import styled from "styled-components";
+import { formatPrice } from "../utils/helper";
+import { Link } from "react-router-dom";
+import { Products } from "../types";
+
+// Define interface for props
+interface ListViewProps {
+  products: Products[];
+}
+
+// Sub-component for individual product item in list view
+interface ProductItemProps {
+  product: Products;
+}
+
+const ProductItem: React.FC<ProductItemProps> = ({ product }) => {
+  const { id, image, name, price, description } = product;
+
+  return (
+    <article>
+      <img src={image} alt={name} />
+      <div>
+        <h4>{name}</h4>
+        <h5 className="price">{formatPrice(price)}</h5>
+        <p>{description.substring(0, 150)}...</p>
+        <Link to={`/products/${id}`} className="btn">
+          Details
+        </Link>
+      </div>
+    </article>
+  );
+};
+
+// Main functional component for list view of products
+const ListView: React.FC<ListViewProps> = ({ products }) => {
+  if (!products || products.length === 0) {
+    return (
+      <h5 style={{ textTransform: "none" }}>Sorry, no products matched</h5>
+    );
+  }
+
+  return (
+    <Wrapper>
+      {products.map((product) => (
+        <ProductItem key={product.id} product={product} />
+      ))}
+    </Wrapper>
+  );
+};
+
+const Wrapper = styled.section`
+  display: grid;
+  row-gap: 3rem;
+
+  img {
+    width: 100%;
+    display: block;
+    width: 300px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+  }
+  h4 {
+    margin-bottom: 0.5rem;
+  }
+  .price {
+    color: var(--clr-primary-6);
+    margin-bottom: 0.75rem;
+  }
+  p {
+    max-width: 45em;
+    margin-bottom: 1rem;
+  }
+  .btn {
+    font-size: 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+  @media (min-width: 992px) {
+    article {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 2rem;
+      align-items: center;
+    }
+  }
+`;
+
+export default ListView;
