@@ -5,8 +5,11 @@
   "installCommand": "npm install",
   "framework": null,
   "functions": {
-    "functions/*.ts": {
-      "runtime": "nodejs18.x"
+    "functions/create-payment-intent.ts": {
+      "runtime": "@vercel/node@18"
+    },
+    "functions/hello.ts": {
+      "runtime": "@vercel/node@18"
     }
   },
   "rewrites": [
