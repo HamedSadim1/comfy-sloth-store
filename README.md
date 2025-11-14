@@ -29,7 +29,7 @@ A modern, fully-refactored e-commerce application built with React, TypeScript, 
 
 ## 📁 Project Structure
 
-```
+```text
 src/
 ├── components/          # Reusable UI components
 ├── pages/              # Page components
@@ -52,32 +52,38 @@ src/
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/HamedSadim1/comfy-sloth-store.git
 cd comfy-sloth-store
 ```
 
-2. Install dependencies:
+1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Create environment variables:
+1. Create environment variables:
+
 ```bash
 cp .env.example .env
 ```
 
 Fill in your environment variables:
+
 - Auth0 credentials
 - Stripe API keys
 - Other required secrets
 
-4. Start the development server:
+1. Start the development server:
+
 ```bash
 npm run dev
 ```
 
-5. Build for production:
+1. Build for production:
+
 ```bash
 npm run build
 ```
@@ -103,24 +109,28 @@ VITE_REACT_APP_STRIP_SECRET_KEY=your_stripe_secret_key
 ## 📝 Key Improvements Made
 
 ### Code Quality
+
 - ✅ Converted all components to functional components with hooks
 - ✅ Added explicit TypeScript typing (no `any` types)
 - ✅ Implemented comprehensive JSDoc documentation
 - ✅ Added proper error handling and logging
 
 ### Performance
+
 - ✅ Memoized expensive operations with `useMemo`
 - ✅ Optimized re-renders with `useCallback`
 - ✅ Implemented code splitting with lazy loading
 - ✅ Efficient state management patterns
 
 ### Architecture
+
 - ✅ Centralized state management with Zustand and Context
 - ✅ Generic API client with full CRUD operations
 - ✅ Modular component structure
 - ✅ Consistent naming conventions
 
 ### Developer Experience
+
 - ✅ Full TypeScript IntelliSense support
 - ✅ Comprehensive ESLint configuration
 - ✅ Clear project structure and documentation
@@ -129,10 +139,10 @@ VITE_REACT_APP_STRIP_SECRET_KEY=your_stripe_secret_key
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a pull request
+1. Create a feature branch: `git checkout -b feature/your-feature`
+1. Commit your changes: `git commit -m 'Add some feature'`
+1. Push to the branch: `git push origin feature/your-feature`
+1. Open a pull request
 
 ## 📄 License
 
