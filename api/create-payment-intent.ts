@@ -10,9 +10,7 @@ if (!secretKey) {
 
 console.log(secretKey);
 
-const stripe = new Stripe(secretKey, {
-  apiVersion: "2024-06-20",
-});
+const stripe = new Stripe(secretKey);
 
 interface PaymentIntentRequestBody {
   shippingFee: number;
