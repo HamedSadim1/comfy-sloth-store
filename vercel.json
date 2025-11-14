@@ -4,14 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": null,
-  "functions": {
-    "functions/create-payment-intent.ts": {
-      "runtime": "@vercel/node@18"
-    },
-    "functions/hello.ts": {
-      "runtime": "@vercel/node@18"
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
