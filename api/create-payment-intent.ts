@@ -11,14 +11,24 @@ if (!secretKey) {
 console.log(secretKey);
 
 const stripe = new Stripe(secretKey, {
-  apiVersion: "2022-11-15",
+  apiVersion: "2024-06-20",
 });
 
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { cart, shippingFee, totalAmount } = req.body;
+interface VercelRequest {
+  method: string;
+  body: any;
+}
 
-    const calculateOrderAmount = (shippingFee, totalAmount) => {
+interface VercelResponse {
+  status(code: number): VercelResponse;
+  json(data: any): void;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === "POST") {
+    const { shippingFee, totalAmount } = req.body;
+
+    const calculateOrderAmount = (shippingFee: number, totalAmount: number): number => {
       return shippingFee + totalAmount;
     };
 
@@ -29,7 +39,8 @@ export default async function handler(req, res) {
       });
       res.status(200).json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-      res.status(500).json({ msg: error.message });
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ msg: errorMessage });
     }
   } else {
     res.status(200).json({ message: "Create Payment Intent" });
