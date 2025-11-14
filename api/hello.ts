@@ -5,9 +5,15 @@ interface VercelRequest {
   url: string;
 }
 
+interface HelloResponse {
+  name: string;
+  method: string;
+  url: string;
+}
+
 interface VercelResponse {
   status(code: number): VercelResponse;
-  json(data: any): void;
+  json(data: HelloResponse): void;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

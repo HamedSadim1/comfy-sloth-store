@@ -14,21 +14,46 @@ const stripe = new Stripe(secretKey, {
   apiVersion: "2024-06-20",
 });
 
+interface PaymentIntentRequestBody {
+  shippingFee: number;
+  totalAmount: number;
+}
+
+interface PaymentIntentSuccessResponse {
+  clientSecret: string;
+}
+
+interface PaymentIntentErrorResponse {
+  msg: string;
+}
+
+interface PaymentIntentInfoResponse {
+  message: string;
+}
+
 interface VercelRequest {
   method: string;
-  body: any;
+  body: PaymentIntentRequestBody;
 }
 
 interface VercelResponse {
   status(code: number): VercelResponse;
-  json(data: any): void;
+  json(
+    data:
+      | PaymentIntentSuccessResponse
+      | PaymentIntentErrorResponse
+      | PaymentIntentInfoResponse
+  ): void;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "POST") {
     const { shippingFee, totalAmount } = req.body;
 
-    const calculateOrderAmount = (shippingFee: number, totalAmount: number): number => {
+    const calculateOrderAmount = (
+      shippingFee: number,
+      totalAmount: number
+    ): number => {
       return shippingFee + totalAmount;
     };
 
@@ -37,9 +62,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount: calculateOrderAmount(shippingFee, totalAmount),
         currency: "eur",
       });
+
+      if (!paymentIntent.client_secret) {
+        throw new Error("Failed to create payment intent client secret");
+      }
+
       res.status(200).json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ msg: errorMessage });
     }
   } else {
