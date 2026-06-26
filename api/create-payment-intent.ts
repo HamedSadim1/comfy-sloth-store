@@ -1,7 +1,7 @@
-import { config } from "dotenv";
+import dotenv from "dotenv";
 import Stripe from "stripe";
 
-config();
+dotenv.config();
 
 const secretKey = process.env.VITE_REACT_APP_STRIP_SECRET_KEY;
 if (!secretKey) {
@@ -10,7 +10,9 @@ if (!secretKey) {
 
 console.log(secretKey);
 
-const stripe = new Stripe(secretKey);
+const stripe = new Stripe(secretKey, {
+  apiVersion: "2026-06-24.dahlia",
+});
 
 interface PaymentIntentRequestBody {
   shippingFee: number;

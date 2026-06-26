@@ -1,7 +1,7 @@
-import { config } from "dotenv";
+import dotenv from "dotenv";
 import Stripe from "stripe";
 
-config();
+dotenv.config();
 
 const secretKey = process.env.VITE_REACT_APP_STRIP_SECRET_KEY;
 if (!secretKey) {
@@ -11,7 +11,7 @@ if (!secretKey) {
 console.log(secretKey);
 
 const stripe = new Stripe(secretKey, {
-  apiVersion: "2022-11-15",
+  apiVersion: "2026-06-24.dahlia",
 });
 
 export async function handler(event, context) {

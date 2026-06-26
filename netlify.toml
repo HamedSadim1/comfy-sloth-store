@@ -7,8 +7,8 @@
   functions = "./functions"
 
 [build.environment]
-  # Node version for build
-  NODE_VERSION = "18"
+  # Node version for build (Node 22 required for Vite 8, ESLint 10, TypeScript 6)
+  NODE_VERSION = "22"
 
 # Redirect rules for SPA
 [[redirects]]

@@ -44,22 +44,28 @@ const Gallery: React.FC<GalleryProps> = ({
 
 // Main functional component for product images with gallery
 const ProductImages: React.FC<ProductImagesProps> = ({ images }) => {
-  // Check if the images array is empty or undefined
-  if (!images || images.length === 0) {
-    return (
-      <Wrapper>
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
-          alt="no image"
-          className="main"
-        />
-      </Wrapper>
-    );
-  }
+  // Provide a fallback image when the gallery is empty, so hooks below always
+  // receive a valid initial image without needing a conditional early-return
+  // (which would violate the rules of hooks).
+  const safeImages = images ?? [];
+  const fallbackImage: Image = {
+    id: "no-image",
+    width: 600,
+    height: 600,
+    url: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+    filename: "no-image",
+    size: 0,
+    type: "image/svg+xml",
+    thumbnails: {
+      small: { url: "", width: 0, height: 0 },
+      large: { url: "", width: 0, height: 0 },
+      full: { url: "", width: 0, height: 0 },
+    },
+  };
+  const initialImage: Image = safeImages[0] ?? fallbackImage;
 
   const setImage = useSingleProductStore((state) => state.setImage);
-
-  const [main, setMain] = useState<Image>(images[0]);
+  const [main, setMain] = useState<Image>(initialImage);
 
   // Update store image when main changes
   useEffect(() => {
@@ -71,11 +77,24 @@ const ProductImages: React.FC<ProductImagesProps> = ({ images }) => {
     setMain(image);
   }, []);
 
+  // Check if the images array is empty or undefined
+  if (safeImages.length === 0) {
+    return (
+      <Wrapper>
+        <img
+          src={fallbackImage.url}
+          alt="no image"
+          className="main"
+        />
+      </Wrapper>
+    );
+  }
+
   return (
     <Wrapper>
       <MainImage image={main} />
       <Gallery
-        images={images}
+        images={safeImages}
         mainImage={main}
         onImageSelect={handleImageSelect}
       />
