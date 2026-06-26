@@ -14,7 +14,10 @@ interface MainImageProps {
 }
 
 const MainImage: React.FC<MainImageProps> = ({ image }) => (
-  <img src={image.url} alt="main image" className="main" />
+  <div className="main-frame">
+    <img src={image.url} alt="main product image" className="main" />
+    <div className="shine" aria-hidden="true" />
+  </div>
 );
 
 // Sub-component for image gallery
@@ -29,16 +32,23 @@ const Gallery: React.FC<GalleryProps> = ({
   mainImage,
   onImageSelect,
 }) => (
-  <div className="gallery">
-    {images.map((image, index) => (
-      <img
-        src={image.url}
-        alt={image.filename}
-        key={index}
-        onClick={() => onImageSelect(image)}
-        className={image.url === mainImage.url ? "active" : ""}
-      />
-    ))}
+  <div className="gallery" role="tablist" aria-label="Product images">
+    {images.map((image, index) => {
+      const isActive = image.url === mainImage.url;
+      return (
+        <button
+          key={image.id ?? index}
+          type="button"
+          role="tab"
+          aria-selected={isActive}
+          aria-label={`Show image ${index + 1}`}
+          onClick={() => onImageSelect(image)}
+          className={isActive ? "thumb active" : "thumb"}
+        >
+          <img src={image.url} alt={image.filename} loading="lazy" />
+        </button>
+      );
+    })}
   </div>
 );
 
@@ -81,68 +91,151 @@ const ProductImages: React.FC<ProductImagesProps> = ({ images }) => {
   if (safeImages.length === 0) {
     return (
       <Wrapper>
-        <img
-          src={fallbackImage.url}
-          alt="no image"
-          className="main"
-        />
+        <img src={fallbackImage.url} alt="no image" className="main" />
       </Wrapper>
     );
   }
 
   return (
     <Wrapper>
-      <MainImage image={main} />
-      <Gallery
-        images={safeImages}
-        mainImage={main}
-        onImageSelect={handleImageSelect}
-      />
+      {safeImages.length > 1 ? (
+        <div className="layout">
+          <Gallery
+            images={safeImages}
+            mainImage={main}
+            onImageSelect={handleImageSelect}
+          />
+          <MainImage image={main} />
+        </div>
+      ) : (
+        <MainImage image={main} />
+      )}
     </Wrapper>
   );
 };
 
 const Wrapper = styled.section`
-  .main {
-    height: 600px;
-  }
-  img {
-    width: 100%;
-    display: block;
-    border-radius: var(--radius);
-    object-fit: cover;
-  }
-  .gallery {
-    margin-top: 1rem;
+  .layout {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    column-gap: 1rem;
+    gap: 1rem;
+  }
+
+  .main-frame {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--clr-grey-10);
+    aspect-ratio: 1 / 1;
+    box-shadow: var(--shadow-xl);
+  }
+
+  img.main {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform 0.7s var(--ease-out);
+  }
+
+  .main-frame:hover img.main {
+    transform: scale(1.03);
+  }
+
+  /* Subtle highlight gradient on hover */
+  .shine {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0) 50%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s var(--ease-out);
+  }
+
+  .main-frame:hover .shine {
+    opacity: 1;
+  }
+
+  .gallery {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 88px;
+    gap: 0.65rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+
+    /* Hide scrollbar but keep usability on small screens */
+    scrollbar-width: thin;
+  }
+
+  .thumb {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    width: 88px;
+    height: 88px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--clr-grey-10);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition:
+      transform 0.2s var(--ease-out),
+      box-shadow 0.3s var(--ease-out),
+      opacity 0.3s var(--ease-out);
+    opacity: 0.7;
+
     img {
-      height: 100px;
-      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    &:hover {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: none;
+      opacity: 1;
+      box-shadow: 0 0 0 3px rgba(204, 152, 110, 0.35);
+    }
+
+    &.active {
+      opacity: 1;
+      box-shadow:
+        0 0 0 2px var(--clr-white),
+        0 0 0 4px var(--clr-primary-5),
+        var(--shadow-md);
     }
   }
-  .active {
-    box-shadow: 0px 0px 0px 2px var(--clr-primary-5);
+
+  /* On desktop, stack thumbnails vertically next to the main image */
+  @media (min-width: 768px) {
+    .layout {
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .gallery {
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+      grid-template-rows: repeat(auto-fit, 88px);
+      overflow-x: visible;
+      padding-bottom: 0;
+    }
   }
+
   @media (max-width: 576px) {
-    .main {
-      height: 300px;
-    }
-    .gallery {
-      img {
-        height: 50px;
-      }
-    }
-  }
-  @media (min-width: 992px) {
-    .main {
-      height: 500px;
-    }
-    .gallery {
-      img {
-        height: 75px;
-      }
+    .main-frame {
+      aspect-ratio: 4 / 5;
     }
   }
 `;

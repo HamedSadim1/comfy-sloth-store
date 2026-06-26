@@ -42,8 +42,12 @@ const StarRating: React.FC<{ stars: number }> = ({ stars }) => {
   }, [stars]);
 
   return (
-    <div className="stars" aria-label={`Rating: ${stars} out of 5 stars`}>
-      <span>{starIcons}</span>
+    <div
+      className="stars"
+      role="img"
+      aria-label={`Rating: ${stars.toFixed(1)} out of 5 stars`}
+    >
+      {starIcons}
     </div>
   );
 };
@@ -52,25 +56,70 @@ const StarRating: React.FC<{ stars: number }> = ({ stars }) => {
 const Stars: React.FC<StarsProps> = ({ reviews, stars }) => {
   return (
     <Wrapper>
-      <StarRating stars={stars} />
-      <p className="reviews">({reviews} customer reviews)</p>
+      <div className="row">
+        <StarRating stars={stars} />
+        <span className="score" aria-hidden="true">
+          {stars.toFixed(1)}
+        </span>
+      </div>
+      <p className="reviews">
+        <a href="#reviews">{reviews} customer reviews</a>
+      </p>
     </Wrapper>
   );
 };
 
 const Wrapper = styled.div`
   display: flex;
-  align-items: center;
-  span {
-    color: #ffb900;
-    font-size: 1rem;
-    margin-right: 0.25rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
   }
-  p {
-    margin-left: 0.5rem;
-    margin-bottom: 0;
+
+  .stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    color: #f5a623;
+    font-size: 1.05rem;
+
+    svg {
+      filter: drop-shadow(0 1px 1px rgba(245, 166, 35, 0.18));
+    }
   }
-  margin-bottom: 0.5rem;
+
+  .score {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--clr-grey-1);
+    letter-spacing: 0;
+    background: var(--clr-primary-10);
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+  }
+
+  .reviews {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--clr-grey-5);
+    letter-spacing: 0;
+
+    a {
+      color: var(--clr-grey-2);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.3s var(--ease-out);
+
+      &:hover {
+        color: var(--clr-primary-2);
+      }
+    }
+  }
 `;
 
 export default Stars;

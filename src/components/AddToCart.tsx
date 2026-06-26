@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
-import { FaCheck } from "react-icons/fa";
+import { FaShoppingCart } from "react-icons/fa";
 import { SingleProduct } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
 import { useCartContext } from "../Context/CartContext";
@@ -25,22 +24,24 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({
   onColorChange,
 }) => {
   return (
-    <div className="colors">
-      <span>colors :</span>
-      <div>
-        {colors.map((color, index) => (
-          <button
-            key={index}
-            style={{ background: color }}
-            className={`${
-              mainColor === color ? "color-btn active" : "color-btn"
-            }`}
-            onClick={() => onColorChange(color)}
-            aria-label={`Select color ${color}`}
-          >
-            {mainColor === color && <FaCheck />}
-          </button>
-        ))}
+    <div className="colors" role="radiogroup" aria-label="Product color">
+      <span className="label">Color</span>
+      <div className="swatches">
+        {colors.map((color) => {
+          const isActive = mainColor === color;
+          return (
+            <button
+              key={color}
+              type="button"
+              role="radio"
+              aria-checked={isActive}
+              aria-label={`Select color ${color}`}
+              style={{ background: color }}
+              className={isActive ? "swatch active" : "swatch"}
+              onClick={() => onColorChange(color)}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -83,8 +84,6 @@ const AddToCart: React.FC<AddToCartProps> = ({ product }) => {
   const handleIncrease = useCallback(() => {
     if (amount < stock) {
       increaseAmount();
-    } else {
-      console.warn("Cannot increase amount beyond available stock");
     }
   }, [amount, stock, increaseAmount]);
 
@@ -95,62 +94,157 @@ const AddToCart: React.FC<AddToCartProps> = ({ product }) => {
         mainColor={mainColor}
         onColorChange={handleColorChange}
       />
-      <div className="btn-container">
+
+      <div className="qty-row">
+        <span className="label">Quantity</span>
         <AmountButtons
           amount={amount}
           decrease={decreaseAmount}
           increase={handleIncrease}
         />
-        <Link onClick={handleAddToCart} to="/cart" className="btn">
-          add to cart
-        </Link>
       </div>
+
+      <button type="button" className="add-btn" onClick={handleAddToCart}>
+        <FaShoppingCart />
+        <span>Add to cart</span>
+      </button>
+
+      <p className="sub-note">
+        {stock > 0 && stock <= 5
+          ? `Only ${stock} left — order soon`
+          : "In stock — ready to ship"}
+      </p>
     </Wrapper>
   );
 };
 
 const Wrapper = styled.section`
-  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  .label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--clr-grey-3);
+    margin-bottom: 0.55rem;
+  }
+
+  /* Color picker */
   .colors {
-    display: grid;
-    grid-template-columns: 125px 1fr;
-    align-items: center;
-    margin-bottom: 1rem;
-    span {
-      text-transform: capitalize;
-      font-weight: 700;
-    }
-    div {
+    .swatches {
       display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .swatch {
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      box-shadow: inset 0 0 0 2px var(--clr-white);
+      cursor: pointer;
+      opacity: 0.65;
+      appearance: none;
+      padding: 0;
+      transition:
+        opacity 0.3s var(--ease-out),
+        transform 0.2s var(--ease-out),
+        box-shadow 0.3s var(--ease-out);
+
+      &:hover {
+        opacity: 0.95;
+        transform: scale(1.08);
+      }
+
+      &:focus-visible {
+        outline: none;
+        opacity: 1;
+        box-shadow:
+          inset 0 0 0 2px var(--clr-white),
+          0 0 0 3px rgba(204, 152, 110, 0.4);
+      }
+
+      &.active {
+        opacity: 1;
+        transform: scale(1.05);
+        border-color: var(--clr-grey-1);
+      }
     }
   }
-  .color-btn {
-    display: inline-block;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    background: #222;
-    margin-right: 0.5rem;
-    border: none;
-    cursor: pointer;
-    opacity: 0.5;
+
+  /* Quantity row */
+  .qty-row {
     display: flex;
     align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Add to cart button */
+  .add-btn {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--gradient-accent);
+    color: var(--clr-white);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition:
+      transform 0.3s var(--ease-out),
+      box-shadow 0.3s var(--ease-out),
+      filter 0.3s var(--ease-out);
+
     svg {
-      font-size: 0.75rem;
-      color: var(--clr-white);
+      width: 1.05rem;
+      height: 1.05rem;
+      transition: transform 0.3s var(--ease-out);
+    }
+
+    &:hover:not(:disabled),
+    &:focus-visible:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      filter: brightness(1.05);
+      outline: none;
+
+      svg {
+        transform: translateX(2px) rotate(-8deg);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--clr-primary-5);
+      outline-offset: 2px;
     }
   }
-  .active {
-    opacity: 1;
+
+  .sub-note {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--clr-grey-5);
+    letter-spacing: 0;
+    text-align: center;
   }
-  .btn-container {
-    margin-top: 2rem;
-  }
-  .btn {
-    margin-top: 1rem;
-    width: 140px;
+
+  @media (min-width: 576px) {
+    .add-btn {
+      width: auto;
+      min-width: 240px;
+    }
   }
 `;
 
