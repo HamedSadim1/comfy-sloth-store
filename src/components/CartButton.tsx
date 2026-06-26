@@ -21,11 +21,11 @@ interface AuthButtonProps {
 // Sub-component for the cart link to improve reusability
 const CartLink: React.FC<CartLinkProps> = ({ totalItems, onClick }) => (
   <Link to="/cart" className="cart-btn" onClick={onClick}>
-    Cart
     <span className="cart-container">
       <FaShoppingCart />
       <span className="cart-value">{totalItems}</span>
     </span>
+    <span className="cart-label">Cart</span>
   </Link>
 );
 
@@ -36,12 +36,24 @@ const AuthButton: React.FC<AuthButtonProps> = ({
   onLogout,
 }) =>
   isAuthenticated ? (
-    <button type="button" className="auth-btn" onClick={onLogout}>
-      Logout <FaUserMinus />
+    <button
+      type="button"
+      className="auth-btn"
+      onClick={onLogout}
+      aria-label="Log out"
+    >
+      <span className="auth-label">Logout</span>
+      <FaUserMinus />
     </button>
   ) : (
-    <button type="button" className="auth-btn" onClick={onLogin}>
-      Login <FaUserPlus />
+    <button
+      type="button"
+      className="auth-btn"
+      onClick={onLogin}
+      aria-label="Log in"
+    >
+      <span className="auth-label">Login</span>
+      <FaUserPlus />
     </button>
   );
 
@@ -76,54 +88,95 @@ const CartButton: React.FC = () => {
 
 const Wrapper = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto auto;
   align-items: center;
-  width: 225px;
+  gap: 0.6rem;
 
   .cart-btn {
-    color: var(--clr-grey-1);
-    font-size: 1.5rem;
-    letter-spacing: var(--spacing);
-    color: var(--clr-grey-1);
-    display: flex;
-
+    display: inline-flex;
     align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.95rem 0.55rem 0.85rem;
+    border-radius: var(--radius-full);
+    background: var(--clr-primary-10);
+    color: var(--clr-primary-2);
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    transition: background 0.3s var(--ease-out),
+      color 0.3s var(--ease-out), transform 0.3s var(--ease-out),
+      box-shadow 0.3s var(--ease-out);
+
+    &:hover {
+      background: var(--gradient-accent);
+      color: var(--clr-white);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
   }
+
   .cart-container {
     display: flex;
     align-items: center;
     position: relative;
+
     svg {
-      height: 1.6rem;
-      margin-left: 5px;
+      height: 1.15rem;
+      width: 1.15rem;
     }
   }
+
   .cart-value {
     position: absolute;
     top: -10px;
-    right: -16px;
-    background: var(--clr-primary-5);
-    width: 16px;
-    height: 16px;
+    right: -12px;
+    background: var(--clr-red-dark);
+    color: var(--clr-white);
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    font-size: 0.75rem;
-    color: var(--clr-white);
-    padding: 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--clr-white);
   }
+
   .auth-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    gap: 0.45rem;
     background: transparent;
-    border-color: transparent;
-    font-size: 1.5rem;
-    cursor: pointer;
+    border: 1px solid rgba(34, 34, 34, 0.14);
     color: var(--clr-grey-1);
-    letter-spacing: var(--spacing);
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    letter-spacing: 0;
+    transition: background 0.3s var(--ease-out),
+      border-color 0.3s var(--ease-out), color 0.3s var(--ease-out),
+      transform 0.3s var(--ease-out);
+
     svg {
-      margin-left: 5px;
+      width: 0.95rem;
+      height: 0.95rem;
+    }
+
+    &:hover {
+      background: var(--clr-grey-1);
+      color: var(--clr-white);
+      border-color: var(--clr-grey-1);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--clr-primary-5);
+      outline-offset: 2px;
     }
   }
 `;
