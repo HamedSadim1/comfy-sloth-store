@@ -150,6 +150,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       cart,
       totalItems,
       totalAmount,
+      shippingFee,
       addToCart,
       removeFromCart,
       clearCart,

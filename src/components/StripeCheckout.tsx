@@ -163,7 +163,7 @@ const CheckoutForm: React.FC = () => {
         }
       );
       setClientSecret(response.data.clientSecret);
-    } catch (error) {
+    } catch (_error) {
       // Error handling without console.error for production
       setError("Failed to create payment intent. Please try again.");
     }
