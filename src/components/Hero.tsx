@@ -1,103 +1,301 @@
 import React from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { HiArrowRight } from "react-icons/hi";
 import heroBcg from "../assets/hero-bcg.jpeg";
 import heroBcg2 from "../assets/hero-bcg-2.jpeg";
 
-// Sub-component for hero content (text and button)
-const HeroContent: React.FC = () => (
-  <article className="content">
-    <h1>
-      design your <br />
-      comfort zone
+// Eyebrow tag at the top of the hero copy (collection / season label)
+const Eyebrow: React.FC = () => (
+  <span className="eyebrow" aria-label="New collection">
+    <span className="dot" />
+    New · Spring 2025 collection
+  </span>
+);
+
+// Hero copy block (eyebrow, heading, subhead, dual CTAs)
+const HeroCopy: React.FC = () => (
+  <article className="copy">
+    <Eyebrow />
+    <h1 className="display">
+      design your <span className="accent">comfort</span> zone
     </h1>
     <p>
-      Design your comfort zone is our mantra at "Comfy Sloth." We empower you to
-      create a space that reflects your style and offers ultimate relaxation.
-      With our range of products, transform your home into a cozy sanctuary
+      Timeless furniture and home accents, handpicked for slow living. Build a
+      space that feels like a deep breath &mdash; calm, considered, and
+      unmistakably yours.
     </p>
-    <Link to="/products" className="btn hero-btn">
-      shop now
-    </Link>
+    <div className="ctas">
+      <Link to="/products" className="primary">
+        Shop collection
+        <HiArrowRight />
+      </Link>
+      <Link to="/about" className="secondary">
+        Our story
+      </Link>
+    </div>
   </article>
 );
 
-// Sub-component for hero images
+// Hero image block (main + accent + social proof badge)
 const HeroImages: React.FC = () => (
   <article className="img-container">
-    <img src={heroBcg} alt="nice table" className="main-img" />
-    <img src={heroBcg2} alt="person working" className="accent-img" />
+    <div className="img-frame">
+      <img
+        src={heroBcg}
+        alt="a calm, sunlit living room scene"
+        className="main-img"
+      />
+    </div>
+    <img
+      src={heroBcg2}
+      alt="a person enjoying slow moments at home"
+      className="accent-img"
+    />
+    <div className="badge" aria-label="Rated 4.9 out of 5 by over twelve thousand customers">
+      <span className="rating">★ 4.9</span>
+      <small>Loved by 12k+ customers</small>
+    </div>
   </article>
 );
 
-// Main functional component for the hero section
+// Main hero component: split copy + image layout on desktop, stacked on mobile
 const Hero: React.FC = () => {
   return (
-    <Wrapper className="section-center">
-      <HeroContent />
-      <HeroImages />
+    <Wrapper>
+      <div className="section-center layout">
+        <HeroCopy />
+        <HeroImages />
+      </div>
     </Wrapper>
   );
 };
 
 const Wrapper = styled.section`
-  min-height: 60vh;
-  display: grid;
-  place-items: center;
+  position: relative;
+  padding: 5rem 0 3rem;
+  background: var(--gradient-soft);
+  overflow: hidden;
+
+  /* Subtle decorative blob in the corner */
+  &::before {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(
+      circle at center,
+      var(--clr-primary-9) 0%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    top: -200px;
+    right: -180px;
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .layout {
+    position: relative;
+    z-index: var(--z-base);
+    display: grid;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: var(--clr-primary-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-xs);
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--clr-primary-5);
+      box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.18);
+    }
+  }
+
+  .display {
+    font-size: var(--fs-display);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--clr-grey-1);
+    text-transform: none;
+    margin-bottom: 1.5rem;
+
+    .accent {
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-style: italic;
+    }
+  }
+
+  .copy p {
+    font-size: 1.1rem;
+    line-height: 1.65;
+    color: var(--clr-grey-5);
+    max-width: 36rem;
+    margin-bottom: 2rem;
+  }
+
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.95rem 1.6rem;
+    border-radius: var(--radius-full);
+    background: var(--gradient-accent);
+    color: var(--clr-white);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+    box-shadow: var(--shadow-md);
+
+    svg {
+      transition: transform 0.3s var(--ease-out);
+    }
+
+    &:hover,
+    &:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      svg {
+        transform: translateX(4px);
+      }
+    }
+  }
+
+  .secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.95rem 1.4rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--clr-grey-1);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid rgba(34, 34, 34, 0.12);
+    transition: background 0.3s var(--ease-out),
+      border-color 0.3s var(--ease-out), transform 0.3s var(--ease-out);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--clr-white);
+      border-color: rgba(34, 34, 34, 0.25);
+      transform: translateY(-2px);
+    }
+  }
+
   .img-container {
+    position: relative;
     display: none;
   }
 
-  p {
-    line-height: 2;
-    max-width: 45em;
-    margin-bottom: 2rem;
-    color: var(--clr-grey-5);
-    font-size: 1rem;
+  .img-frame {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    background: var(--clr-primary-9);
+    aspect-ratio: 4 / 5;
   }
+
+  .main-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.7s var(--ease-out);
+  }
+
+  .img-frame:hover .main-img {
+    transform: scale(1.04);
+  }
+
+  .accent-img {
+    position: absolute;
+    bottom: -2rem;
+    left: -2rem;
+    width: 46%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    aspect-ratio: 1;
+    object-fit: cover;
+    border: 6px solid var(--clr-white);
+  }
+
+  .badge {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: var(--clr-white);
+    border-radius: var(--radius-full);
+    padding: 0.65rem 1.05rem;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.2;
+
+    .rating {
+      font-weight: 700;
+      color: var(--clr-grey-1);
+      font-size: 0.95rem;
+    }
+
+    small {
+      color: var(--clr-grey-5);
+      font-size: 0.7rem;
+    }
+  }
+
   @media (min-width: 992px) {
-    height: calc(100vh - 5rem);
-    grid-template-columns: 1fr 1fr;
-    gap: 8rem;
-    h1 {
-      margin-bottom: 2rem;
+    padding: 6rem 0 4rem;
+
+    .layout {
+      grid-template-columns: 1.05fr 1fr;
+      gap: 5rem;
+      min-height: calc(100vh - 12rem);
     }
-    p {
-      font-size: 1.25rem;
-    }
-    .hero-btn {
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-    }
+
     .img-container {
       display: block;
-      position: relative;
     }
-    .main-img {
-      width: 100%;
-      height: 550px;
-      position: relative;
-      border-radius: var(--radius);
-      display: block;
-      object-fit: cover;
-    }
-    .accent-img {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 250px;
-      transform: translateX(-50%);
-      border-radius: var(--radius);
-    }
-    .img-container::before {
-      content: "";
-      position: absolute;
-      width: 10%;
-      height: 80%;
-      background: var(--clr-primary-9);
-      bottom: 0%;
-      left: -8%;
-      border-radius: var(--radius);
+  }
+
+  @media (min-width: 1280px) {
+    .layout {
+      min-height: calc(100vh - 10rem);
     }
   }
 `;
