@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import Product from "./Product";
-import { Products } from "../types";
+import type { Products } from "../types";
 
 // Define interface for props
 interface GridViewProps {

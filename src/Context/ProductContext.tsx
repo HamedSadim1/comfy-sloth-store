@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { Products } from "../types";
+import type { Products } from "../types";
 import useComfys from "../hooks/useComfye";
 
 // Interface for the product context value

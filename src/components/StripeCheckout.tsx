@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-import {
-  loadStripe,
+import type {
   StripeCardElementChangeEvent,
-  StripeCardElement,
+  StripeCardElement} from "@stripe/stripe-js";
+import {
+  loadStripe
 } from "@stripe/stripe-js";
 import {
   CardElement,

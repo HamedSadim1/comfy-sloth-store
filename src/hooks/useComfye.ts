@@ -7,7 +7,7 @@ import APIClient, {
   axiosInstance,
   type DummyProductsResponse,
 } from "../services/apiClient";
-import { Products } from "../types";
+import type { Products } from "../types";
 import { mapDummyProductToProduct, type DummyProduct } from "../utils/mappers";
 import ms from "ms";
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { Image } from "../types";
+import type { Image } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
 
 // Module-level canonical fallback used when a product doesn't ship an image.

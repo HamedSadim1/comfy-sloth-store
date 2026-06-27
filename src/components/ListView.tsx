@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
 import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
-import { Products } from "../types";
+import type { Products } from "../types";
 
 // Define interface for props
 interface ListViewProps {

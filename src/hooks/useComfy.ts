@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import APIClient from "../services/apiClient";
-import { SingleProduct } from "../types";
+import type { SingleProduct } from "../types";
+import type {
+  DummyProduct} from "../utils/mappers";
 import {
-  DummyProduct,
   mapDummyProductToSingleProduct,
 } from "../utils/mappers";
 

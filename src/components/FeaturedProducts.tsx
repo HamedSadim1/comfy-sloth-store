@@ -6,7 +6,7 @@ import Error from "./Error";
 import Loading from "./Loading";
 import Product from "./Product";
 import useFeaturedProducts from "../hooks/useFeaturedProducts";
-import { Products } from "../types";
+import type { Products } from "../types";
 
 // Define interface for the hook return type
 interface FeaturedProductsData {

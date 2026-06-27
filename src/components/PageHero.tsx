@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import { SingleProduct } from "../types";
+import type { SingleProduct } from "../types";
 import { useStore } from "../store";
 
 // Define interface for props

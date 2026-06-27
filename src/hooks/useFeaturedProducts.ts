@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Products } from "../types";
+import type { Products } from "../types";
 import useComfys from "./useComfye";
 
 // Interface for the return type of the hook

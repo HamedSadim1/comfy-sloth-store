@@ -12,7 +12,7 @@ import { FiX } from "react-icons/fi";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
 import useCategoryList from "../hooks/useCategoryList";
-import { Products, Category } from "../types";
+import type { Products, Category } from "../types";
 import { shimmerFill } from "../styles/shimmer";
 import Button from "./Button";
 

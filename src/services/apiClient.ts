@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig, CanceledError } from "axios";
+import type { AxiosInstance, AxiosRequestConfig} from "axios";
+import axios, { CanceledError } from "axios";
 
 /**
  * Custom error class for API errors.

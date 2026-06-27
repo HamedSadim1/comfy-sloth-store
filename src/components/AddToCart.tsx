@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import styled from "styled-components";
 import { FaShoppingCart } from "react-icons/fa";
-import { SingleProduct } from "../types";
+import type { SingleProduct } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
 import { useCartContext } from "../Context/CartContext";
 import AmountButtons from "./AmountButton";

@@ -1,4 +1,4 @@
-import { Products, SingleProduct, Image } from "../types";
+import type { Products, SingleProduct, Image } from "../types";
 
 /**
  * Subset of the dummyjson.com `/products` response shape that the app

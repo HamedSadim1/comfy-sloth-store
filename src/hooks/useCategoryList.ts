@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../services/apiClient";
-import { Category } from "../types";
+import type { Category } from "../types";
 import { category_list_url } from "../utils/Contants";
 import ms from "ms";
 

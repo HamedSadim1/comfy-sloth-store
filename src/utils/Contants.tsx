@@ -1,4 +1,4 @@
-import { LinksInterface, ServicesInterface } from "../types";
+import type { LinksInterface, ServicesInterface } from "../types";
 import { GiCompass, GiDiamondHard, GiStabbedNote } from "react-icons/gi";
 
 /**

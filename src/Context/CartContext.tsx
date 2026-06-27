@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { SingleProduct } from "../types";
+import type { SingleProduct } from "../types";
 
 // Interface for the cart item with additional properties
 //

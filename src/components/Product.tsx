@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { Products } from "../types";
+import type { Products } from "../types";
 import { gradientText } from "../styles/gradientText";
 
 // Define interface for props

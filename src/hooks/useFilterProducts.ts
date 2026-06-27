@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Products } from "../types";
+import type { Products } from "../types";
 import { NO_BRAND_FILTER } from "../utils/helper";
 
 // Interface for the hook parameters

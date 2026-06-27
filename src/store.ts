@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Products } from "./types";
+import type { Products } from "./types";
 // One-source-of-truth typing + initial value for the Sort dropdown. Lives
 // in `useComfye.ts` because that hook is the only place that knows how
 // to translate the slug into dummyjson's `sortBy`/`order` URL params.

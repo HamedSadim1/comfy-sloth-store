@@ -1,17 +1,19 @@
+import type {
+  ReactNode} from "react";
 import React, {
   createContext,
   useContext,
   useEffect,
-  ReactNode,
   useState,
   useMemo,
 } from "react";
-import {
-  useAuth0,
+import type {
   User,
   RedirectLoginOptions,
   AppState,
-  LogoutOptions,
+  LogoutOptions} from "@auth0/auth0-react";
+import {
+  useAuth0
 } from "@auth0/auth0-react";
 
 // Interface for the user context value
