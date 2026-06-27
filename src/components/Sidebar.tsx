@@ -1,7 +1,7 @@
 import React from "react";
 import logo from "../assets/logo.svg";
 import { Link } from "react-router-dom";
-import { useProductContext } from "../Context/ProductContext";
+import { useUiStore } from "../uiStore";
 import { FaTimes } from "react-icons/fa";
 import { APP_NAME, links } from "../utils/Contants";
 import styled from "styled-components";
@@ -50,7 +50,8 @@ const SidebarLinks: React.FC<{
 
 // Main functional component for sidebar navigation
 const Sidebar: React.FC = () => {
-  const { isSidebarOpen, closeSidebar } = useProductContext();
+  const isSidebarOpen = useUiStore((state) => state.isSidebarOpen);
+  const closeSidebar = useUiStore((state) => state.closeSidebar);
   const { myUser } = useUserContext();
 
   return (

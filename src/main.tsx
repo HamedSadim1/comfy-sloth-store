@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
-import { ProductProvider } from "./Context/ProductContext.tsx";
 import { CartProvider } from "./Context/CartContext.tsx";
 import { UserProvider } from "./Context/UserContext.tsx";
 import { Auth0Provider } from "@auth0/auth0-react";
@@ -44,22 +43,19 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       cacheLocation="localstorage"
     >
       {/* React Query provider for data fetching. Sits directly under
-          Auth0Provider so that every context below it (Product, Filter,
-          Cart) and any component that calls the useComfys / useComfy hooks
-          can resolve the QueryClient context. */}
+          Auth0Provider so that every context below it (Filter, Cart) and
+          any component that calls the useComfys / useComfy hooks can
+          resolve the QueryClient context. */}
       <QueryClientProvider client={queryClient}>
         {/* React Query Devtools for development */}
         <ReactQueryDevtools />
         {/* User context provider for user state */}
         <UserProvider>
-          {/* Product context provider for product data */}
-          <ProductProvider>
-            {/* Cart context provider for shopping cart */}
-            <CartProvider>
-              {/* Main App component */}
-              <App />
-            </CartProvider>
-          </ProductProvider>
+          {/* Cart context provider for shopping cart */}
+          <CartProvider>
+            {/* Main App component */}
+            <App />
+          </CartProvider>
         </UserProvider>
       </QueryClientProvider>
     </Auth0Provider>

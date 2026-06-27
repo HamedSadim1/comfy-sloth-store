@@ -5,7 +5,7 @@ import { FaBars } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import { APP_NAME, links } from "../utils/Contants";
 import CartButtons from "./CartButton";
-import { useProductContext } from "../Context/ProductContext";
+import { useUiStore } from "../uiStore";
 
 // Nav header: logo + mobile toggle button
 const NavHeader: React.FC<{ onToggle: () => void }> = ({ onToggle }) => (
@@ -48,7 +48,7 @@ const NavLinks: React.FC = () => (
 
 // Main functional component for the navbar
 const Navbar: React.FC = () => {
-  const { openSidebar } = useProductContext();
+  const openSidebar = useUiStore((state) => state.openSidebar);
 
   return (
     <NavContainer>

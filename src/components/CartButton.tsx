@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import { FaShoppingCart, FaUserMinus, FaUserPlus } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { useProductContext } from "../Context/ProductContext";
+import { useUiStore } from "../uiStore";
 import { useCartContext } from "../Context/CartContext";
 import { useUserContext } from "../Context/UserContext";
 import Button from "./Button";
@@ -66,7 +66,7 @@ const AuthButton: React.FC<AuthButtonProps> = ({
 // Main functional component for cart and auth buttons
 const CartButton: React.FC = () => {
   const { isAuthenticated, loginWithRedirect, logout } = useUserContext();
-  const { closeSidebar } = useProductContext();
+  const closeSidebar = useUiStore((state) => state.closeSidebar);
   const { totalItems, clearCart } = useCartContext();
 
   // Handler for login, memoized for performance
