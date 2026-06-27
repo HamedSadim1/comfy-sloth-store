@@ -13,6 +13,7 @@ import {
 import useComfy from "../hooks/useComfy";
 import { useSingleProductStore } from "../SingleProductStore";
 import { FiTruck, FiRefreshCw, FiShield } from "react-icons/fi";
+import { gradientText } from "../styles/gradientText";
 
 // Sub-component: meta pill with label + value
 interface MetaPillProps {
@@ -228,10 +229,7 @@ const Wrapper = styled.main`
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    ${gradientText}
     margin: 1.25rem 0 1.5rem;
   }
 

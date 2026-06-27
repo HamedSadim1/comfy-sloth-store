@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { FiSend } from "react-icons/fi";
 import { newsletter_url } from "../utils/Contants";
+import { gradientText } from "../styles/gradientText";
 
 // Sub-component for the newsletter form
 const NewsletterForm: React.FC = () => (
@@ -140,10 +141,7 @@ const Wrapper = styled.section`
       color: var(--clr-grey-1);
 
       .highlight {
-        background: var(--gradient-text);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+        ${gradientText}
       }
     }
 

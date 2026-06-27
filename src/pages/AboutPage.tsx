@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
 import aboutImg from "../assets/hero-bcg-2.jpeg";
 import { services } from "../utils/Contants";
+import { gradientText } from "../styles/gradientText";
 
 // Small reusable eyebrow pill
 const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -250,10 +251,7 @@ const HeroSection = styled.section`
     max-width: 22ch;
 
     .accent {
-      background: var(--gradient-text);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      ${gradientText}
       font-style: italic;
     }
   }
@@ -556,10 +554,7 @@ const ImpactSection = styled.section`
       font-size: clamp(2rem, 3.5vw + 0.5rem, 2.75rem);
       font-weight: 800;
       letter-spacing: -0.02em;
-      background: var(--gradient-text);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      ${gradientText}
       line-height: 1;
       margin-bottom: 0.5rem;
     }

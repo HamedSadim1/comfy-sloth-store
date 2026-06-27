@@ -4,6 +4,7 @@ import { formatPrice } from "../utils/helper";
 import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
 import type { Products } from "../types";
+import { gradientText } from "../styles/gradientText";
 
 // Define interface for props
 interface ListViewProps {
@@ -165,10 +166,7 @@ const Wrapper = styled.section`
     font-weight: 700;
     color: var(--clr-primary-2);
     letter-spacing: 0;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    ${gradientText}
   }
 
   p {

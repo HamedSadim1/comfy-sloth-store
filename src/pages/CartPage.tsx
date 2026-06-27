@@ -6,6 +6,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContent } from "../components";
 import { useCartContext } from "../Context/CartContext";
 import { formatPrice } from "../utils/helper";
+import { gradientText } from "../styles/gradientText";
 
 // Eyebrow chip used in the page hero.
 const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -169,10 +170,7 @@ const HeroSection = styled.section`
   }
 
   .display .accent {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    ${gradientText}
   }
 
   .lede {
@@ -288,12 +286,9 @@ const Section = styled.section`
       max-width: 22rem;
     }
 
-    .title .accent {
-      background: var(--gradient-text);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
+  .title .accent {
+    ${gradientText}
+  }
 
     .lede {
       color: var(--clr-grey-3);
