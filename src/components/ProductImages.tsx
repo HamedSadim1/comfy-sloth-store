@@ -3,6 +3,24 @@ import styled from "styled-components";
 import { Image } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
 
+// Module-level canonical fallback used when a product doesn't ship an image.
+// Declared outside the component so the reference is stable across renders,
+// which keeps the dependency array of the prop-reset useEffect lint-clean.
+const fallbackImage: Image = {
+  id: "no-image",
+  width: 600,
+  height: 600,
+  url: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+  filename: "no-image",
+  size: 0,
+  type: "image/svg+xml",
+  thumbnails: {
+    small: { url: "", width: 0, height: 0 },
+    large: { url: "", width: 0, height: 0 },
+    full: { url: "", width: 0, height: 0 },
+  },
+};
+
 // Define interface for props
 interface ProductImagesProps {
   images: Image[];
@@ -54,41 +72,31 @@ const Gallery: React.FC<GalleryProps> = ({
 
 // Main functional component for product images with gallery
 const ProductImages: React.FC<ProductImagesProps> = ({ images }) => {
-  // Provide a fallback image when the gallery is empty, so hooks below always
-  // receive a valid initial image without needing a conditional early-return
-  // (which would violate the rules of hooks).
-  const safeImages = images ?? [];
-  const fallbackImage: Image = {
-    id: "no-image",
-    width: 600,
-    height: 600,
-    url: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
-    filename: "no-image",
-    size: 0,
-    type: "image/svg+xml",
-    thumbnails: {
-      small: { url: "", width: 0, height: 0 },
-      large: { url: "", width: 0, height: 0 },
-      full: { url: "", width: 0, height: 0 },
-    },
-  };
-  const initialImage: Image = safeImages[0] ?? fallbackImage;
-
   const setImage = useSingleProductStore((state) => state.setImage);
-  const [main, setMain] = useState<Image>(initialImage);
 
-  // Update store image when main changes
+  // First image, or the module-level fallback when the gallery is empty.
+  // Used both as the lazy `useState` seed (so the first render has a real
+  // image) and inside the prop-reset effect below.
+  const firstImage = images[0] ?? fallbackImage;
+
+  const [main, setMain] = useState<Image>(firstImage);
+
+  // Reset `main` + push the new URL into the Zustand store whenever the
+  // parent's `images` prop changes (e.g. navigating /products/A -> /products/B).
+  // Closes over the freshly-computed `firstImage` from the latest render.
   useEffect(() => {
-    setImage(main.url);
-  }, [main, setImage]);
+    setMain(firstImage);
+    setImage(firstImage.url);
+  }, [images, setImage, firstImage]);
 
-  // Handler for selecting a new main image
+  // Click handler also keeps the store in sync (no separate main-watcher effect).
   const handleImageSelect = useCallback((image: Image) => {
     setMain(image);
-  }, []);
+    setImage(image.url);
+  }, [setImage]);
 
-  // Check if the images array is empty or undefined
-  if (safeImages.length === 0) {
+  // Empty-array early return lives AFTER the hooks so the rules of hooks are upheld.
+  if (images.length === 0) {
     return (
       <Wrapper>
         <img src={fallbackImage.url} alt="no image" className="main" />
@@ -98,10 +106,10 @@ const ProductImages: React.FC<ProductImagesProps> = ({ images }) => {
 
   return (
     <Wrapper>
-      {safeImages.length > 1 ? (
+      {images.length > 1 ? (
         <div className="layout">
           <Gallery
-            images={safeImages}
+            images={images}
             mainImage={main}
             onImageSelect={handleImageSelect}
           />
