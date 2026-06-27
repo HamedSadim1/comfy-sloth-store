@@ -1,11 +1,12 @@
 import React from "react";
 import styled from "styled-components";
 import { FiSend } from "react-icons/fi";
+import { newsletter_url } from "../utils/Contants";
 
 // Sub-component for the newsletter form
 const NewsletterForm: React.FC = () => (
   <form
-    action="https://formspree.io/f/mlekvlgr"
+    action={newsletter_url}
     method="POST"
     className="contact-form"
   >

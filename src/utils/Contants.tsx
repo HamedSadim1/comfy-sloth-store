@@ -79,6 +79,14 @@ export const single_product_url: string = "/products/";
 export const category_list_url: string = "/products/category-list";
 
 /**
+ * Endpoint that posts newsletter signups to the Formspree contact-handling
+ * service. Used by both the Footer's newsletter column AND the home-page
+ * Contact section so the two flows never go out of sync (e.g. when rotating
+ * the Formspree form ID during a spam-control session).
+ */
+export const newsletter_url: string = "https://formspree.io/f/mlekvlgr";
+
+/**
  * Application constants object for easy access and potential future expansion.
  */
 export const constants = {
@@ -89,5 +97,6 @@ export const constants = {
     products: products_url,
     singleProduct: single_product_url,
     categoryList: category_list_url,
+    newsletter: newsletter_url,
   },
 } as const;

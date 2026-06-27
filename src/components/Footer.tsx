@@ -15,7 +15,7 @@ import {
   FaCcApplePay,
   FaCcStripe,
 } from "react-icons/fa";
-import { APP_NAME } from "../utils/Contants";
+import { APP_NAME, newsletter_url } from "../utils/Contants";
 
 // Reusable column heading
 const ColumnTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -120,7 +120,7 @@ const NewsletterColumn: React.FC = () => (
     <ColumnTitle>Stay in touch</ColumnTitle>
     <p>New drops and design inspiration, once a month. No spam.</p>
     <form
-      action="https://formspree.io/f/mlekvlgr"
+      action={newsletter_url}
       method="POST"
       className="form"
     >
