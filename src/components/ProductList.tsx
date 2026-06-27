@@ -1,12 +1,24 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import styled from "styled-components";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
+import { pluralize } from "../utils/helper";
 import ListView from "./ListView";
 import GridView from "./GridView";
 import useFilterProducts from "../hooks/useFilterProducts";
-import { Products } from "../types";
+import ProductGridSkeleton from "./ProductGridSkeleton";
+import FetchingBar from "./FetchingBar";
 
-// Main functional component for product list with filtering and view switching
+/**
+ * Main functional component for product list with filtering, view switching
+ * and server-paginated infinite scroll.
+ *
+ * Pagination strategy: `@tanstack/react-query`'s `useInfiniteQuery`
+ * drives each `/products?limit=10&skip=N` request. The queryKey keeps
+ * per-page entries separately cached so re-mounts stay instant within the
+ * 24h stale window. Filters stay client-side on the flatMapped, accumulated
+ * page buffer, so changing a filter does NOT round-trip to the API.
+ */
 const ProductList: React.FC = () => {
   // Retrieve filter and view state from store
   const searchText = useStore((state) => state.comfyStoreQuery.searchText);
@@ -16,47 +28,375 @@ const ProductList: React.FC = () => {
   const gridView = useStore((state) => state.comfyStoreQuery.gridView);
   const setNumberOfProducts = useStore((state) => state.setNumberOfProducts);
   const category = useStore((state) => state.comfyStoreQuery.category);
+  const sort = useStore((state) => state.comfyStoreQuery.sort);
   const company = useStore((state) => state.comfyStoreQuery.company);
-  const color = useStore((state) => state.comfyStoreQuery.color);
   const price = useStore((state) => state.comfyStoreQuery.price);
 
-  // Fetch products data
-  const { data, error, isLoading } = useComfys();
+  // Server-paginated fetch with React Query. `data` is
+  // `InfiniteData<ProductsPage> | undefined`, ordered by `pageParams`.
+  //
+  // We pass both `category` AND `sort` so React Query treats any change
+  // to either as a fresh query (different queryKey) and the upstream
+  // dummyjson endpoint is configured correctly:
+  //
+  //   - `category`: swaps the URL from `/products` to
+  //     `/products/category/{slug}` server-side. Without this every
+  //     click on a category would re-filter the same already-loaded
+  //     products, leaving empty grids whenever the picked category
+  //     wasn't represented in the first 10 cached results.
+  //
+  //   - `sort`: appends `?sortBy=...&order=...` so the server returns
+  //     each paginated slice already-sorted. THIS IS NOT OPTIONAL for
+  //     infinite scroll to stay correctly ordered: client-side sort
+  //     over the accumulated page buffer would silently shuffle pages
+  //     from different server orderings together.
+  //
+  // `placeholderData: keepPreviousData` keeps the previous tuple's
+  // first page on screen while the new tuple resolves (no empty-grid
+  // flash). The IO observer and `handleLoadMore` are gated on
+  // `!isPlaceholderData` so phantom next-page fetches don't get
+  // appended to the soon-to-be-replaced buffer.
+  const {
+    data,
+    error,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPlaceholderData,
+  } = useComfys({ category, sort });
 
-  const products: Products[] = data || [];
+  // Accumulates Products[] across every page loaded so far. Re-derived
+  // only when the query result identity changes (which it does on each
+  // successful page append).
+  const products = useMemo(
+    () => data?.pages.flatMap((page) => page.products) ?? [],
+    [data]
+  );
 
-  // Filter products based on current filters
+  // Filter pipeline (client-side) — operates on whatever's currently
+  // loaded. As more pages arrive the filtered view grows automatically.
   const filteredProducts = useFilterProducts({
     products,
     searchText,
     showAllFreeShipping: freeShipping,
     category,
     company,
-    color,
     price,
   });
 
-  // Update the number of products in store when filtered products change
+  // Update the Sort-header counter. We report the TOTAL filtered count
+  // (not the page-bound slice), so the number keeps growing as the user
+  // scrolls and more matches appear in later pages.
   useEffect(() => {
     setNumberOfProducts(filteredProducts);
   }, [filteredProducts, setNumberOfProducts]);
 
-  // Handle error state
+  // Stable signature of the active filter set. Whenever it changes we
+  // re-arm the scroll gate so a freshly narrowed result doesn't auto-fire
+  // fetchNextPage just because the user scrolled earlier. Without this
+  // reset, the gate stays true for the lifetime of the component.
+  const filterSignature = useMemo(
+    () =>
+      JSON.stringify({
+        searchText,
+        freeShipping,
+        category,
+        company,
+        price,
+      }),
+    [searchText, freeShipping, category, company, price]
+  );
+
+  // Tracks "has the user actually scrolled at least once on the current
+  // filter set?". The IO callback refuses to call fetchNextPage() until
+  // this flips true. We reset it in the effect below whenever filters
+  // change.
+  const userScrolledRef = useRef<boolean>(false);
+  useEffect(() => {
+    userScrolledRef.current = false;
+  }, [filterSignature]);
+
+  // IntersectionObserver on a 1px sentinel below the rendered items.
+  // When the user has scrolled at least once AND the sentinel is in or
+  // near the viewport (rootMargin 240px from the bottom), fetchNextPage
+  // pulls another page from the server.
+  //
+  // Note: the scroll listener is intentionally NOT `{ once: true }`.
+  // The filter-reset effect above flips the gate to `false` whenever any
+  // filter changes — a once-listener would have already auto-removed
+  // itself after the user's first scroll, so subsequent filter changes
+  // would leave the gate stuck `false` with no way to re-arm. Re-binding
+  // on every scroll event is a single ref mutation, essentially free.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNextPage) return undefined;
+    if (typeof IntersectionObserver === "undefined") return undefined;
+
+    const markScrolled = () => {
+      userScrolledRef.current = true;
+    };
+    window.addEventListener("scroll", markScrolled, {
+      passive: true,
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting) return;
+        if (!userScrolledRef.current) return;
+        if (isFetchingNextPage) return;
+        // While `keepPreviousData` is serving the previous category's
+        // pages during a category transition, fetching more would append
+        // to the stale pagination buffer — the user-visible data is the
+        // old category, the new fetch will replace it shortly. Skip.
+        if (isPlaceholderData) return;
+        void fetchNextPage();
+      },
+      { rootMargin: "0px 0px 240px 0px" }
+    );
+    observer.observe(el);
+    return () => {
+      window.removeEventListener("scroll", markScrolled);
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
+
+  // Manual "Load more" fallback. Bypasses the IO gate (and ignores any
+  // pending scroll) so keyboard users and IO-unavailable environments
+  // can still request the next page. Same placeholderData guard as the
+  // sentinel above to avoid appending to a soon-to-be-replaced buffer.
+  const handleLoadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage || isPlaceholderData) return;
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
+
+  // Error state — surface the api message directly.
   if (error) {
     return <h5>{error.message}</h5>;
   }
 
-  // Handle loading state
+  // Loading state — first page only; subsequent pages stream in via the
+  // sentinel + button. Render 10 skeleton placeholders that mirror the
+  // currently-active view (grid or list) so the visual layout doesn't
+  // jump when real products arrive.
   if (isLoading) {
-    return <h5>Loading...</h5>;
+    return (
+      <ProductGridSkeleton
+        variant={gridView ? "grid" : "list"}
+        count={10}
+      />
+    );
   }
 
-  // Render appropriate view based on gridView state
-  if (!gridView) {
-    return <ListView products={filteredProducts} />;
-  }
+  // `total` reported by the server (same on every page). `loaded` is the
+  // accumulated Products[] across page buffer; `total` / `loaded` reflect
+  // what the API has returned, NOT what the user sees — client-side
+  // filters in useFilterProducts narrow that set further.
+  const total = data?.pages[data.pages.length - 1]?.total ?? 0;
+  const loaded = products.length;
+  // Derived copy-friendly counts. EndNote + LoadMoreArea hint now use
+  // `filteredCount` so the "you've seen all N" line never disagrees with
+  // the visible grid (fixes the loaded-vs-filtered discrepancy where a
+  // 6-product category with one active client filter rendered 1 card
+  // but copy claimed "you've seen all 6"). `isFiltered` lets us hint at
+  // the latent total so the user can tell "filtering narrowed this" vs.
+  // "the category truly only has N items".
+  const filteredCount = filteredProducts.length;
+  const isFiltered = filteredCount < loaded;
 
-  return <GridView products={filteredProducts} />;
+  return (
+    <>
+      {/* Thin top-of-page strip that signals the next product page is
+          streaming in. Fully unmounts when isFetchingNextPage flips false
+          so steady-state layout stays clean. */}
+      <FetchingBar active={isFetchingNextPage} />
+      {gridView ? (
+        <GridView products={filteredProducts} />
+      ) : (
+        <ListView products={filteredProducts} />
+      )}
+
+      {filteredCount === 0 && loaded > 0 ? (
+        // Active filter knocked out everything: show a friendly empty
+        // state instead of an invisible page (and instead of the prior
+        // "you've seen all N" copy that disagreed with the empty grid).
+        <EmptyState role="status" aria-live="polite">
+          <p className="empty-title">No products match your filter</p>
+          <p className="empty-hint">
+            {loaded} {loaded === 1 ? "product is" : "products are"} available
+            in this category — try clearing some filters in the sidebar.
+          </p>
+        </EmptyState>
+      ) : filteredCount === 0 ? null : hasNextPage ? (
+        <LoadMoreArea aria-label="Pagination">
+          {/* Sentinel — observed by IntersectionObserver to trigger auto-fetch */}
+          <div ref={sentinelRef} aria-hidden="true" className="sentinel" />
+          <button
+            type="button"
+            className="load-more-btn"
+            onClick={handleLoadMore}
+            disabled={isFetchingNextPage}
+            aria-label={`Load more products${
+              total ? ` (${filteredCount} of ${total} matching)` : ""
+            }`}
+          >
+            {isFetchingNextPage ? "Loading..." : "Load more"}
+          </button>
+          <p className="hint" aria-live="polite">
+            Showing {filteredCount} of {total}{" "}
+            {pluralize(total, "product").replace(/^\d+\s/, "")} loaded
+            {isFiltered && (
+              <span className="hint-detail">
+                {" "}
+                (narrowed from {loaded} by your filter)
+              </span>
+            )}
+          </p>
+        </LoadMoreArea>
+      ) : (
+        <EndNote aria-label="Pagination">
+          <span className="dot" aria-hidden="true" />
+          <span>
+            You&rsquo;ve seen all {pluralize(filteredCount, "product")}
+            {isFiltered && (
+              <span className="endnote-detail">
+                {" "}
+                matching your filter
+                {loaded > filteredCount && (
+                  <> ({loaded} total in this category)</>
+                )}
+              </span>
+            )}
+          </span>
+        </EndNote>
+      )}
+    </>
+  );
 };
+
+const LoadMoreArea = styled.div`
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+
+  /* The sentinel lives in the document flow but is visually invisible —
+     the IntersectionObserver only needs it to occupy space. */
+  .sentinel {
+    height: 1px;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .load-more-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 1.6rem;
+    border-radius: var(--radius-full);
+    background: var(--clr-white);
+    border: 1.5px solid var(--clr-primary-7);
+    color: var(--clr-primary-2);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+    box-shadow: var(--shadow-xs);
+    transition:
+      background 0.3s var(--ease-out),
+      color 0.3s var(--ease-out),
+      border-color 0.3s var(--ease-out),
+      transform 0.2s var(--ease-out),
+      box-shadow 0.3s var(--ease-out);
+
+    &:hover:not(:disabled),
+    &:focus-visible:not(:disabled) {
+      background: var(--gradient-accent);
+      color: var(--clr-white);
+      border-color: transparent;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      outline: none;
+    }
+
+    &:focus-visible:not(:disabled) {
+      box-shadow:
+        var(--shadow-md),
+        0 0 0 3px rgba(204, 152, 110, 0.4);
+    }
+
+    &:disabled {
+      cursor: progress;
+      opacity: 0.7;
+    }
+  }
+
+.hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--clr-grey-5);
+  letter-spacing: 0;
+}
+
+.hint-detail {
+  color: var(--clr-grey-6);
+}
+`;
+
+const EndNote = styled.div`
+  margin-top: 3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  align-self: center;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-full);
+  background: var(--clr-primary-10);
+  border: 1px solid rgba(204, 152, 110, 0.18);
+  color: var(--clr-primary-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--clr-primary-5);
+  }
+
+  .endnote-detail {
+    color: var(--clr-grey-5);
+    font-weight: 500;
+  }
+`;
+
+const EmptyState = styled.div`
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+
+  .empty-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--clr-grey-2);
+    margin: 0;
+    letter-spacing: 0;
+  }
+
+  .empty-hint {
+    font-size: 0.85rem;
+    color: var(--clr-grey-5);
+    margin: 0;
+    max-width: 28rem;
+  }
+`;
 
 export default ProductList;

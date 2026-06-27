@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Color, Products } from "../types";
+import type { Products } from "../types";
+import { NO_BRAND_FILTER } from "../utils/helper";
 
 // Interface for the hook parameters
 interface UseFilterProductsParams {
@@ -8,7 +9,6 @@ interface UseFilterProductsParams {
   showAllFreeShipping: boolean;
   category: string;
   company: string;
-  color: string;
   price: number;
 }
 
@@ -24,7 +24,6 @@ const useFilterProducts = ({
   showAllFreeShipping,
   category,
   company,
-  color,
   price,
 }: UseFilterProductsParams): Products[] => {
   const filteredProducts = useMemo(() => {
@@ -41,25 +40,36 @@ const useFilterProducts = ({
         return product.name.toLowerCase().includes(searchText.toLowerCase());
       })
       .filter((product) => {
-        // Filter by category
-        if (category.toLowerCase() === "all") {
-          return true;
-        }
-        return product.category.toLowerCase() === category.toLowerCase();
+        // Filter by category (mapper keeps casing from the API; the
+        // dropdown passes the raw choice back, so compare as-is or
+        // // case-insensitively — we normalize on both sides to stay safe).
+        //
+        // NOTE: Since useComfys now filters category server-side
+        // (each click hits `/products/category/{slug}`), every loaded
+        // product already matches the active category — this filter is
+        // a defensive no-op. Kept in the pipeline for offline mode /
+        // future state-override scenarios where the server query might
+        // be bypassed.
+        const c = category.toLowerCase();
+        if (c === "all") return true;
+        return product.category.toLowerCase() === c;
       })
       .filter((product) => {
-        // Filter by company
-        if (company.toLowerCase() === "all") {
-          return true;
-        }
-        return product.company.toLowerCase() === company.toLowerCase();
-      })
-      .filter((product) => {
-        // Filter by color
-        if (color.toLowerCase() === "all") {
-          return true;
-        }
-        return product.colors.includes(color as Color);
+        // Filter by company (mapper lowercases the brand at the source,
+        // and the dropdown stores the raw lowercase value, so the compare
+        // keys already line up).
+        //
+        // The `NO_BRAND_FILTER` sentinel (single source of truth in
+        // helper.ts) is a wildcard that narrows the list to products
+        // whose `company` is empty — i.e. the API's `brand` field was
+        // missing on the upstream dummyjson request. Without this
+        // branch, picking `'No brand'` in the dropdown would silently
+        // drop every product rather than returning the no-brand
+        // subset. Surface these rows only when the user explicitly
+        // picks the sentinel; do NOT include them under `'all'`.
+        if (company === "all") return true;
+        if (company === NO_BRAND_FILTER) return !product.company;
+        return product.company === company;
       })
       .filter((product) => {
         // Filter by maximum price
@@ -71,7 +81,6 @@ const useFilterProducts = ({
     showAllFreeShipping,
     category,
     company,
-    color,
     price,
   ]);
 

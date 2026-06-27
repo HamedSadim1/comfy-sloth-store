@@ -1,16 +1,5 @@
 import { create } from "zustand";
 
-// Interface for cart item details
-export interface CartDetail {
-  id: string;
-  stock: number;
-  price: number;
-  name: string;
-  color: string;
-  amount: number;
-  image: string;
-}
-
 // Interface for single product state
 interface SingleProductState {
   id: string;
@@ -18,7 +7,6 @@ interface SingleProductState {
   price: number;
   stock: number;
   image: string;
-  color: string;
   amount: number;
 }
 
@@ -26,16 +14,15 @@ interface SingleProductState {
 interface SingleProductStore extends SingleProductState {
   increaseAmount: () => void;
   decreaseAmount: () => void;
-  setColor: (color: string) => void;
   setImage: (image: string) => void;
   setAmount: (amount: number) => void;
-  setProduct: (product: Omit<SingleProductState, "amount" | "color">) => void;
+  setProduct: (product: Omit<SingleProductState, "amount">) => void;
   reset: () => void;
 }
 
 /**
  * Zustand store for managing single product selection state.
- * Handles amount, color, image selection for a product before adding to cart.
+ * Handles amount and image selection for a product before adding to cart.
  */
 export const useSingleProductStore = create<SingleProductStore>((set) => ({
   // Initial state
@@ -44,7 +31,6 @@ export const useSingleProductStore = create<SingleProductStore>((set) => ({
   price: 0,
   stock: 0,
   image: "",
-  color: "",
   amount: 1,
 
   // Increase amount, respecting stock limit
@@ -61,11 +47,6 @@ export const useSingleProductStore = create<SingleProductStore>((set) => ({
     }));
   },
 
-  // Set selected color
-  setColor: (color: string) => {
-    set({ color });
-  },
-
   // Set selected image
   setImage: (image: string) => {
     set({ image });
@@ -79,8 +60,8 @@ export const useSingleProductStore = create<SingleProductStore>((set) => ({
   },
 
   // Set product details (used when loading a product)
-  setProduct: (product: Omit<SingleProductState, "amount" | "color">) => {
-    set({ ...product, amount: 1, color: "" });
+  setProduct: (product: Omit<SingleProductState, "amount">) => {
+    set({ ...product, amount: 1 });
   },
 
   // Reset to initial state
@@ -91,7 +72,6 @@ export const useSingleProductStore = create<SingleProductStore>((set) => ({
       price: 0,
       stock: 0,
       image: "",
-      color: "",
       amount: 1,
     });
   },

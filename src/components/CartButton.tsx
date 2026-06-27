@@ -2,9 +2,10 @@ import React, { useCallback } from "react";
 import { FaShoppingCart, FaUserMinus, FaUserPlus } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { useProductContext } from "../Context/ProductContext";
+import { useUiStore } from "../uiStore";
 import { useCartContext } from "../Context/CartContext";
 import { useUserContext } from "../Context/UserContext";
+import Button from "./Button";
 
 // Define types for sub-component props
 interface CartLinkProps {
@@ -18,37 +19,54 @@ interface AuthButtonProps {
   onLogout: () => void;
 }
 
-// Sub-component for the cart link to improve reusability
+// Sub-component for the cart link — wraps <Link> with the shared
+// <Button variant="cart" /> primitive.
 const CartLink: React.FC<CartLinkProps> = ({ totalItems, onClick }) => (
-  <Link to="/cart" className="cart-btn" onClick={onClick}>
-    Cart
+  <Button
+    as={Link}
+    to="/cart"
+    variant="cart"
+    onClick={onClick}
+    aria-label={`Cart, ${totalItems} item${totalItems === 1 ? "" : "s"}`}
+  >
     <span className="cart-container">
       <FaShoppingCart />
       <span className="cart-value">{totalItems}</span>
     </span>
-  </Link>
+    <span className="cart-label">Cart</span>
+  </Button>
 );
 
-// Sub-component for authentication button
+// Sub-component for authentication button. The secondary styling is
+// hand-tuned for an `outline → inverted-grey` transition that doesn't
+// fully map to the available Button variants, so the body lives here
+// and only the typography + base layout borrow from the design system.
 const AuthButton: React.FC<AuthButtonProps> = ({
   isAuthenticated,
   onLogin,
   onLogout,
 }) =>
   isAuthenticated ? (
-    <button type="button" className="auth-btn" onClick={onLogout}>
-      Logout <FaUserMinus />
+    <button
+      type="button"
+      className="auth-btn"
+      onClick={onLogout}
+      aria-label="Log out"
+    >
+      <span className="auth-label">Logout</span>
+      <FaUserMinus />
     </button>
   ) : (
-    <button type="button" className="auth-btn" onClick={onLogin}>
-      Login <FaUserPlus />
+    <button type="button" className="auth-btn" onClick={onLogin} aria-label="Log in">
+      <span className="auth-label">Login</span>
+      <FaUserPlus />
     </button>
   );
 
 // Main functional component for cart and auth buttons
 const CartButton: React.FC = () => {
   const { isAuthenticated, loginWithRedirect, logout } = useUserContext();
-  const { closeSidebar } = useProductContext();
+  const closeSidebar = useUiStore((state) => state.closeSidebar);
   const { totalItems, clearCart } = useCartContext();
 
   // Handler for login, memoized for performance
@@ -76,55 +94,75 @@ const CartButton: React.FC = () => {
 
 const Wrapper = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto auto;
   align-items: center;
-  width: 225px;
+  gap: 0.6rem;
 
-  .cart-btn {
-    color: var(--clr-grey-1);
-    font-size: 1.5rem;
-    letter-spacing: var(--spacing);
-    color: var(--clr-grey-1);
-    display: flex;
-
-    align-items: center;
-  }
+  /* The cart-link visual rules come from <Button variant="cart" />;
+     we only style the inner cart-container and the value-bubble here. */
   .cart-container {
     display: flex;
     align-items: center;
     position: relative;
+    gap: 0.4rem;
+
     svg {
-      height: 1.6rem;
-      margin-left: 5px;
+      height: 1.15rem;
+      width: 1.15rem;
     }
   }
+
   .cart-value {
     position: absolute;
     top: -10px;
-    right: -16px;
-    background: var(--clr-primary-5);
-    width: 16px;
-    height: 16px;
+    right: -12px;
+    background: var(--clr-red-dark);
+    color: var(--clr-white);
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    font-size: 0.75rem;
-    color: var(--clr-white);
-    padding: 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--clr-white);
   }
+
+  /* Auth button keeps its custom hover-inverted styling (outline →
+     filled grey-1) — too specific to fit the shared Button variants. */
   .auth-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    gap: 0.45rem;
     background: transparent;
-    border-color: transparent;
-    font-size: 1.5rem;
-    cursor: pointer;
+    border: 1px solid rgba(34, 34, 34, 0.14);
     color: var(--clr-grey-1);
-    letter-spacing: var(--spacing);
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    letter-spacing: 0;
+
     svg {
-      margin-left: 5px;
+      width: 0.95rem;
+      height: 0.95rem;
     }
+  }
+
+  .auth-btn:hover {
+    background: var(--clr-grey-1);
+    color: var(--clr-white);
+    border-color: var(--clr-grey-1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .auth-btn:focus-visible {
+    outline: 2px solid var(--clr-primary-5);
+    outline-offset: 2px;
   }
 `;
 

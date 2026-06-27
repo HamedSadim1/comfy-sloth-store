@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useCallback } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import { SingleProduct } from "../types";
-import { useFilterContext } from "../Context/FilterContext";
+import type { SingleProduct } from "../types";
+import { useStore } from "../store";
 
 // Define interface for props
 interface PageHeroProps {
@@ -27,9 +27,20 @@ const Breadcrumb: React.FC<PageHeroProps & { onClearFilters: () => void }> = ({
   </h3>
 );
 
-// Main functional component for page hero with breadcrumbs
+// Main functional component for page hero with breadcrumbs.
+//
+// `onClearFilters` resets all filter state so clicking the breadcrumb
+// "Products" returns the user to the unfiltered catalogue. Previously
+// delegated to the legacy FilterContext; now wired to the Zustand store
+// directly. We grab the running maxPrice from the store so `clearFilter`
+// can reset price to that value without us having to plumb it through.
 const PageHero: React.FC<PageHeroProps> = ({ title, product }) => {
-  const { clearFilters } = useFilterContext();
+  const clearFilter = useStore((state) => state.clearFilter);
+  const maxPrice = useStore((state) => state.comfyStoreQuery.maxPrice);
+  const handleClearFilters = useCallback(
+    () => clearFilter(maxPrice),
+    [clearFilter, maxPrice]
+  );
 
   return (
     <Wrapper>
@@ -37,7 +48,7 @@ const PageHero: React.FC<PageHeroProps> = ({ title, product }) => {
         <Breadcrumb
           title={title}
           product={product}
-          onClearFilters={clearFilters}
+          onClearFilters={handleClearFilters}
         />
       </div>
     </Wrapper>

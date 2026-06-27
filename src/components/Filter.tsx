@@ -1,33 +1,53 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import styled from "styled-components";
-import { formatPrice } from "../utils/helper";
-import { FaCheck } from "react-icons/fa";
-import { Categories, companies, colors } from "../data";
+import { formatPrice, NO_BRAND_FILTER } from "../utils/helper";
+import { FaSearch } from "react-icons/fa";
+import { FiX } from "react-icons/fi";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
-import { Products } from "../types";
+import useCategoryList from "../hooks/useCategoryList";
+import type { Products, Category } from "../types";
+import { shimmerFill } from "../styles/shimmer";
+import Button from "./Button";
 
 // Define interfaces for sub-component props
 interface SearchFormProps {
   onSearch: (text: string) => void;
 }
 
+interface FilterGroupProps {
+  title: string;
+  children: React.ReactNode;
+}
+
+// How many chips to show before the "Show all N more" pill kicks in.
+// Picked to fit comfortably in the 240–260px sidebar without scrolling.
+const INITIAL_VISIBLE = 10;
+
 interface CategoryFilterProps {
-  categories: string[];
+  /** Categories to render (either the API list or a products-derived fallback). */
+  categories: Category[];
+  /** True while the dedicated category-list query is pending AND we have
+   *  no fallback yet — the chip group renders shimmer placeholders. */
+  isLoading: boolean;
+  /** True when the dedicated query failed AND we still have a usable
+   *  (products-derived) fallback list — renders a small note above
+   *  the chip group so users know the list isn't the full catalogue. */
+  hasFallbackWarning: boolean;
   selectedCategory: string;
-  onCategoryChange: (category: string) => void;
+  onCategoryChange: (slug: string) => void;
 }
 
 interface CompanyFilterProps {
   companies: string[];
   selectedCompany: string;
   onCompanyChange: (company: string) => void;
-}
-
-interface ColorFilterProps {
-  colors: string[];
-  selectedColor: string;
-  onColorChange: (color: string) => void;
 }
 
 interface PriceFilterProps {
@@ -46,6 +66,14 @@ interface ClearButtonProps {
   onClear: () => void;
 }
 
+// Reusable group block with eyebrow label + content
+const FilterGroup: React.FC<FilterGroupProps> = ({ title, children }) => (
+  <div className="form-control">
+    <span className="label">{title}</span>
+    <div className="control">{children}</div>
+  </div>
+);
+
 // Sub-component for search form
 const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
   const ref = useRef<HTMLInputElement>(null);
@@ -62,107 +90,131 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="form-control">
-        <h5>Search</h5>
-        <input
-          type="text"
-          name="text"
-          placeholder="search"
-          className="search-input"
-          ref={ref}
-        />
-      </div>
+      <FilterGroup title="Search">
+        <div className="search-row">
+          <FaSearch className="search-icon" aria-hidden="true" />
+          <input
+            type="text"
+            name="text"
+            placeholder="search products"
+            className="search-input"
+            ref={ref}
+            aria-label="Search products"
+          />
+        </div>
+      </FilterGroup>
     </form>
   );
 };
 
-// Sub-component for category filter
+// Sub-component for category filter.
+//
+// Reads the full /products/category-list when available (via useCategoryList
+// in the parent) so the chip group shows every category from the first
+// paint. Falls back to a products-derived list with a small warning note
+// if the API call fails. Renders the first `INITIAL_VISIBLE` categories
+// plus a "+N more" pill that the user clicks to expand the rest.
 const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categories,
+  isLoading,
+  hasFallbackWarning,
   selectedCategory,
   onCategoryChange,
-}) => (
-  <div className="form-control">
-    <h5>Category</h5>
-    <div>
-      {categories.map((categoryItem, index) => {
-        const isActive =
-          categoryItem.toLowerCase() === selectedCategory.toLowerCase();
-        return (
-          <button
-            key={index}
-            type="button"
-            name="category"
-            className={isActive ? "all-btn active" : "all-btn"}
-            onClick={() => onCategoryChange(categoryItem.toLowerCase())}
-          >
-            {categoryItem}
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
+}) => {
+  const [expanded, setExpanded] = useState<boolean>(false);
 
-// Sub-component for company filter
+  const visibleCategories = expanded
+    ? categories
+    : categories.slice(0, INITIAL_VISIBLE);
+  const hiddenCount = categories.length - visibleCategories.length;
+
+  return (
+    <FilterGroup title="Category">
+      {hasFallbackWarning && (
+        <p className="fallback-note">
+          Couldn&rsquo;t load the full category list &mdash; showing what&rsquo;s
+          currently visible in the catalogue.
+        </p>
+      )}
+      <div className="chip-list">
+        {/* "all" pseudo-category always first — independent of API. */}
+        <button
+          key="__all__"
+          type="button"
+          name="category"
+          className={selectedCategory === "all" ? "chip active" : "chip"}
+          onClick={() => onCategoryChange("all")}
+        >
+          all
+        </button>
+        {isLoading
+          ? Array.from({ length: INITIAL_VISIBLE }).map((_, i) => (
+              <span
+                key={`__skeleton__${i}`}
+                className="chip chip-skeleton"
+                aria-hidden="true"
+              />
+            ))
+          : null}
+        {!isLoading &&
+          visibleCategories.map((categoryItem) => {
+            const isActive = selectedCategory === categoryItem.slug;
+            return (
+              <button
+                key={categoryItem.slug}
+                type="button"
+                name="category"
+                className={isActive ? "chip active" : "chip"}
+                onClick={() => onCategoryChange(categoryItem.slug)}
+                aria-label={`Filter by category ${categoryItem.name}`}
+              >
+                {categoryItem.name}
+              </button>
+            );
+          })}
+        {!isLoading && hiddenCount > 0 && !expanded && (
+          <button
+            type="button"
+            className="chip show-all-pill"
+            onClick={() => setExpanded(true)}
+            aria-label={`Show ${hiddenCount} more categories`}
+          >
+            +{hiddenCount} more
+          </button>
+        )}
+      </div>
+    </FilterGroup>
+  );
+};
+
+// Sub-component for company filter.
+//
+// Translates the `NO_BRAND_FILTER` sentinel into a human-readable
+// `'No brand'` label at the boundary so users never see the raw
+// magic string in the dropdown. The sentinel itself is still the
+// underlying value so useFilterProducts.ts can match it cleanly.
 const CompanyFilter: React.FC<CompanyFilterProps> = ({
   companies,
   selectedCompany,
   onCompanyChange,
 }) => (
-  <div className="form-control">
-    <h5>Company</h5>
-    <select
-      name="company"
-      id="company"
-      className="company"
-      value={selectedCompany}
-      onChange={(e) => onCompanyChange(e.target.value)}
-    >
-      {companies.map((company, index) => (
-        <option key={index} value={company}>
-          {company}
-        </option>
-      ))}
-    </select>
-  </div>
-);
-
-// Sub-component for color filter
-const ColorFilter: React.FC<ColorFilterProps> = ({
-  colors,
-  selectedColor,
-  onColorChange,
-}) => (
-  <div className="form-control">
-    <h5>Colors</h5>
-    <div className="colors">
-      <button
-        name="color"
-        onClick={() => onColorChange("all")}
-        className={`${selectedColor === "all" ? "all-btn active" : "all-btn"}`}
+  <FilterGroup title="Brand">
+    <div className="select-wrap">
+      <select
+        name="company"
+        className="company"
+        value={selectedCompany}
+        onChange={(e) => onCompanyChange(e.target.value)}
+        aria-label="Filter by brand"
       >
-        all
-      </button>
-      {colors.map((colorData, index) => (
-        <button
-          key={index}
-          name="color"
-          onClick={() => onColorChange(colorData)}
-          style={{ background: colorData }}
-          className={`${
-            selectedColor.toLowerCase() === colorData.toLowerCase()
-              ? "color-btn active"
-              : "color-btn"
-          }`}
-        >
-          {selectedColor.toLowerCase() === colorData.toLowerCase() && (
-            <FaCheck />
-          )}
-        </button>
-      ))}
+        {companies.map((company) => (
+          <option key={company} value={company}>
+            {company === NO_BRAND_FILTER ? "No brand" : company}
+          </option>
+        ))}
+      </select>
     </div>
-  </div>
+  </FilterGroup>
 );
 
 // Sub-component for price filter
@@ -172,19 +224,23 @@ const PriceFilter: React.FC<PriceFilterProps> = ({
   maxPrice,
   onPriceChange,
 }) => (
-  <div className="form-control">
-    <h5>Price</h5>
+  <FilterGroup title="Price">
     <p className="price">{formatPrice(price)}</p>
     <input
       type="range"
       name="price"
-      id="price"
       value={price}
       onChange={(e) => onPriceChange(parseInt(e.target.value))}
       min={minPrice}
       max={maxPrice}
+      className="price-range"
+      aria-label="Maximum price"
     />
-  </div>
+    <div className="price-range-meta">
+      <span>{formatPrice(minPrice)}</span>
+      <span>{formatPrice(maxPrice)}</span>
+    </div>
+  </FilterGroup>
 );
 
 // Sub-component for shipping filter
@@ -192,23 +248,34 @@ const ShippingFilter: React.FC<ShippingFilterProps> = ({
   freeShipping,
   onShippingChange,
 }) => (
-  <div className="form-control shipping">
-    <label htmlFor="shipping">free shipping</label>
-    <input
-      type="checkbox"
-      name="shipping"
-      id="shipping"
-      checked={freeShipping}
-      onChange={onShippingChange}
-    />
-  </div>
+  <FilterGroup title="Shipping">
+    <label className="toggle">
+      <input
+        type="checkbox"
+        name="shipping"
+        checked={freeShipping}
+        onChange={onShippingChange}
+      />
+      <span className="track" aria-hidden="true">
+        <span className="thumb" />
+      </span>
+      <span className="toggle-label">Free shipping only</span>
+    </label>
+  </FilterGroup>
 );
 
-// Sub-component for clear button
+// Sub-component for clear button — uses the shared <Button variant="danger" />
+// primitive for consistency with the cart's clear button.
 const ClearButton: React.FC<ClearButtonProps> = ({ onClear }) => (
-  <button type="button" className="clear-btn" onClick={onClear}>
-    clear filters
-  </button>
+  <Button
+    type="button"
+    variant="danger"
+    onClick={onClear}
+    fullWidth
+    iconRight={<FiX />}
+  >
+    Clear filters
+  </Button>
 );
 
 // Main functional component for filters
@@ -221,28 +288,113 @@ const Filter: React.FC = () => {
   const setFreeShipping = useStore((state) => state.setShowAllFreeShipping);
   const updateCategory = useStore((state) => state.updateCategory);
   const category = useStore((state) => state.comfyStoreQuery.category);
+  const sort = useStore((state) => state.comfyStoreQuery.sort);
   const company = useStore((state) => state.comfyStoreQuery.company);
   const updateCompany = useStore((state) => state.updateCompany);
-  const color = useStore((state) => state.comfyStoreQuery.color);
-  const updateColor = useStore((state) => state.updateColor);
   const clearFilter = useStore((state) => state.clearFilter);
   const getMaxPrice = useStore((state) => state.getMaxPrice);
   const getMinPrice = useStore((state) => state.getMinPrice);
   const price = useStore((state) => state.comfyStoreQuery.price);
   const updatePrice = useStore((state) => state.updatePrice);
+  const setMaxPrice = useStore((state) => state.setMaxPrice);
 
-  // Fetch products data
-  const { data } = useComfys();
-  const products: Products[] = data || [];
+  // Fetch products data FOR THE CURRENT FILTER SET — threading
+  // `{category, sort}` here makes this hook's queryKey identical to
+  // `ProductList.tsx`'s. Without this, this component would default to
+  // category="all" + no sort and pull the catalogue's first 10 cheap
+  // items (Beauty/skincare-ish under dummyjson's native ordering).
+  // They are then used to derive `maxPrice`, `brandOptions`, and the
+  // `fallbackCategories` list, which would NOT match the prices of
+  // the actually-rendered category's items. The price auto-fill would
+  // silently narrow the grid when the user picked a category whose
+  // products sit above the cheap-defaults' max. Passing the active
+  // filter set keeps both components on the same React Query cache
+  // entry and the derived UI values consistent with what's rendered.
+  const { data } = useComfys({ category, sort });
+
+  // `data` from `useComfys` is `InfiniteData<ProductsPage>`; flatMap across
+  // pages to derive the accumulated Products[]. Memoise the fallback so it
+  // isn't a fresh `[]` each render — that would invalidate the brandOptions
+  // useMemo below forever.
+  const products = useMemo<Products[]>(
+    () => data?.pages.flatMap((page) => page.products) ?? [],
+    [data]
+  );
 
   // Calculate min and max prices
   const maxPrice = getMaxPrice(products);
   const minPrice = getMinPrice(products);
 
-  // Initialize price to max on mount
-  useEffect(() => {
+  // Derive the brand <select> options from the loaded product set.
+  //
+  // Always prepended with `'all'`, followed by the unique, sorted list
+  // of populated brand strings. If at least one loaded product has
+  // an empty `company` (no brand on the upstream API), we also
+  // surface a clearly-labelled `'No brand'` filter option (rendered
+  // by CompanyFilter as the user-facing label for the
+  // `NO_BRAND_FILTER` sentinel) so users can still narrow down to
+  // those rows. Without this, low-brand categories (e.g. groceries,
+  // which dummyjson ships with ~no brand fields) would degenerate
+  // the dropdown to just `'all'`, leaving users feeling like the
+  // filter is broken or missing.
+  const brandOptions = useMemo(() => {
+    const known = products
+      .map((p) => p.company)
+      .filter((brand): brand is string => brand.length > 0);
+    const unique = Array.from(new Set(known)).sort();
+    const hasNoBrand = products.some((p) => !p.company);
+    return hasNoBrand
+      ? ["all", NO_BRAND_FILTER, ...unique]
+      : ["all", ...unique];
+  }, [products]);
+
+  // Pull the full dummyjson category list so every category is visible from
+  // the first paint — not only those present in the currently-loaded pages
+  // of `useComfys`. If the API call fails, fall back to a list aggregated
+  // from the products we already have in memory (with a small warning note
+  // rendered inside the CategoryFilter).
+  const {
+    data: categoryList,
+    isLoading: categoryListLoading,
+    isError: categoryListError,
+  } = useCategoryList();
+
+  const fallbackCategories: Category[] = useMemo(() => {
+    const known = products
+      .map((p) => p.category)
+      .filter(
+        (cat): cat is string =>
+          typeof cat === "string" && cat.length > 0 && cat !== "uncategorised"
+      );
+    return Array.from(new Set(known))
+      .sort()
+      .map((slug) => ({ slug, name: slug, url: "" }));
+  }, [products]);
+
+  const categoryItems: Category[] =
+    categoryList && categoryList.length > 0 ? categoryList : fallbackCategories;
+  const isCategoryLoading =
+    categoryListLoading && categoryItems.length === 0;
+  const showFallbackWarning =
+    categoryListError && categoryItems.length > 0;
+
+  // Initialize price to max on mount, AND mirror maxPrice into the store so
+  // PageHero (which doesn't see the products list) can call `clearFilter`
+  // without us having to plumb the value through.
+  //
+  // useLayoutEffect (not useEffect) so this write commits BEFORE the
+  // browser paints. Otherwise we'd hit a transient race on first paint
+  // and on every category change: this component commits with
+  // `maxPrice = 0` while data is loading, ProductList renders in the
+  // same cycle with `store.price = 0` → `filteredProducts = []` → empty
+  // grid + "No products match your filter" flash — even though the
+  // next microtask the store updates and the grid redresses. Lifting
+  // the write into useLayoutEffect means ProductList's first paint
+  // already has the correct store.price.
+  useLayoutEffect(() => {
     updatePrice(maxPrice);
-  }, [updatePrice, maxPrice]);
+    setMaxPrice(maxPrice);
+  }, [updatePrice, setMaxPrice, maxPrice]);
 
   // Handlers with useCallback for performance
   const handleSearch = useCallback(
@@ -266,13 +418,6 @@ const Filter: React.FC = () => {
     [updateCompany]
   );
 
-  const handleColorChange = useCallback(
-    (color: string) => {
-      updateColor(color);
-    },
-    [updateColor]
-  );
-
   const handlePriceChange = useCallback(
     (price: number) => {
       updatePrice(price);
@@ -286,135 +431,389 @@ const Filter: React.FC = () => {
 
   return (
     <Wrapper>
-      <div className="content">
+      <div className="card">
         <SearchForm onSearch={handleSearch} />
+        <hr className="divider" />
+        <CategoryFilter
+          categories={categoryItems}
+          isLoading={isCategoryLoading}
+          hasFallbackWarning={showFallbackWarning}
+          selectedCategory={category}
+          onCategoryChange={handleCategoryChange}
+        />
+        <hr className="divider" />
+        <CompanyFilter
+          companies={brandOptions}
+          selectedCompany={company}
+          onCompanyChange={handleCompanyChange}
+        />
+        <hr className="divider" />
+        <PriceFilter
+          price={price}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          onPriceChange={handlePriceChange}
+        />
+        <hr className="divider" />
+        <ShippingFilter
+          freeShipping={freeShipping}
+          onShippingChange={setFreeShipping}
+        />
+        <hr className="divider" />
+        <ClearButton onClear={handleClear} />
       </div>
-      <CategoryFilter
-        categories={Categories}
-        selectedCategory={category}
-        onCategoryChange={handleCategoryChange}
-      />
-      <CompanyFilter
-        companies={companies}
-        selectedCompany={company}
-        onCompanyChange={handleCompanyChange}
-      />
-      <ColorFilter
-        colors={colors}
-        selectedColor={color}
-        onColorChange={handleColorChange}
-      />
-      <PriceFilter
-        price={price}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
-        onPriceChange={handlePriceChange}
-      />
-      <ShippingFilter
-        freeShipping={freeShipping}
-        onShippingChange={setFreeShipping}
-      />
-      <ClearButton onClear={handleClear} />
     </Wrapper>
   );
 };
 
-const Wrapper = styled.section`
-  .form-control {
-    margin-bottom: 1.25rem;
-    h5 {
-      margin-bottom: 0.5rem;
-    }
-  }
-  .search-input {
-    padding: 0.5rem;
-    background: var(--clr-grey-10);
-    border-radius: var(--radius);
-    border-color: transparent;
-    letter-spacing: var(--spacing);
-  }
-  .search-input::placeholder {
-    text-transform: capitalize;
+const Wrapper = styled.aside`
+  .card {
+    background: var(--clr-white);
+    border: 1px solid rgba(34, 34, 34, 0.06);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem 1.25rem;
+    box-shadow: var(--shadow-xs);
   }
 
-  button {
-    display: block;
-    margin: 0.25em 0;
-    padding: 0.25rem 0;
-    text-transform: capitalize;
-    background: transparent;
+  /* Sticky long enough to be useful on tall product lists */
+  @media (min-width: 768px) {
+    align-self: start;
+    position: sticky;
+    top: 6.5rem;
+  }
+
+  .divider {
     border: none;
-    border-bottom: 1px solid transparent;
-    letter-spacing: var(--spacing);
-    color: var(--clr-grey-5);
-    cursor: pointer;
+    border-top: 1px solid rgba(34, 34, 34, 0.06);
+    margin: 1.25rem 0;
   }
-  .active {
-    border-color: var(--clr-grey-5);
-  }
-  .company {
-    background: var(--clr-grey-10);
-    border-radius: var(--radius);
-    border-color: transparent;
-    padding: 0.25rem;
-  }
-  .colors {
-    display: flex;
-    align-items: center;
-  }
-  .color-btn {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    background: #222;
-    margin-right: 0.5rem;
-    border: none;
-    cursor: pointer;
-    opacity: 0.5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    svg {
-      font-size: 0.5rem;
-      color: var(--clr-white);
+
+  .form-control {
+    .label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--clr-grey-3);
+      margin-bottom: 0.7rem;
     }
   }
-  .all-btn {
+
+  .search-row {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-right: 0.5rem;
-    opacity: 0.5;
+
+    .search-icon {
+      position: absolute;
+      left: 0.85rem;
+      width: 0.9rem;
+      height: 0.9rem;
+      color: var(--clr-grey-6);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.65rem 0.85rem 0.65rem 2.35rem;
+      background: var(--clr-grey-10);
+      border: 1px solid transparent;
+      border-radius: var(--radius-full);
+      font-size: 0.9rem;
+      color: var(--clr-grey-1);
+      letter-spacing: 0;
+      transition:
+        border-color 0.3s var(--ease-out),
+        background 0.3s var(--ease-out),
+        box-shadow 0.3s var(--ease-out);
+      outline: none;
+
+      &::placeholder {
+        color: var(--clr-grey-6);
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      &:focus {
+        background: var(--clr-white);
+        border-color: var(--clr-primary-5);
+        box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.15);
+      }
+    }
   }
-  .active {
-    opacity: 1;
+
+  .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+
+    .chip {
+      padding: 0.32rem 0.75rem;
+      border-radius: var(--radius-full);
+      background: transparent;
+      border: 1px solid rgba(34, 34, 34, 0.1);
+      color: var(--clr-grey-4);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      letter-spacing: 0;
+      cursor: pointer;
+      transition:
+        background 0.3s var(--ease-out),
+        color 0.3s var(--ease-out),
+        border-color 0.3s var(--ease-out),
+        transform 0.2s var(--ease-out);
+
+      &:hover {
+        background: var(--clr-primary-10);
+        border-color: var(--clr-primary-7);
+        color: var(--clr-primary-2);
+      }
+
+      &.active {
+        background: var(--gradient-accent);
+        color: var(--clr-white);
+        border-color: transparent;
+        box-shadow: var(--shadow-sm);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--clr-primary-5);
+        outline-offset: 2px;
+      }
+    }
+
+    /* Skeleton placeholder shown while the /products/category-list
+       query is pending - same DOM shape as a chip so the layout
+       doesn't shift when the real chips arrive. */
+    .chip-skeleton {
+      ${shimmerFill}
+      width: 5rem;
+      border-color: transparent;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* "+N more" pill under the visible chips - sticky-styled visually
+       via a soft fill so it reads as a different affordance. */
+    .show-all-pill {
+      background: var(--clr-primary-10);
+      border-color: transparent;
+      color: var(--clr-primary-2);
+      font-weight: 700;
+
+      &:hover,
+      &:focus-visible {
+        background: var(--clr-primary-9);
+        color: var(--clr-primary-1);
+        border-color: transparent;
+        transform: none;
+      }
+    }
   }
-  .all-btn .active {
-    text-decoration: underline;
+
+  /* Small note rendered above the chip group when we're rendering the
+     products-derived fallback because the API call failed. */
+  .fallback-note {
+    font-size: 0.72rem;
+    color: var(--clr-grey-6);
+    margin: 0 0 0.55rem;
+    letter-spacing: 0;
+    font-style: italic;
   }
+
+  .select-wrap {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-right: 2px solid var(--clr-grey-3);
+      border-bottom: 2px solid var(--clr-grey-3);
+      transform: translateY(-70%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .company {
+      width: 100%;
+      padding: 0.65rem 2.4rem 0.65rem 0.95rem;
+      background: var(--clr-grey-10);
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      color: var(--clr-grey-2);
+      letter-spacing: 0;
+      cursor: pointer;
+      appearance: none;
+      transition:
+        border-color 0.3s var(--ease-out),
+        background 0.3s var(--ease-out);
+
+      &:focus {
+        background: var(--clr-white);
+        border-color: var(--clr-primary-5);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.15);
+      }
+    }
+  }
+
+  /* The Color filter was removed entirely - dummyjson exposes no colour
+     field per product, and the previous fake id-derived palette was
+     misleading. No .color-list block remains. */
+
   .price {
-    margin-bottom: 0.25rem;
-  }
-  .shipping {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    text-transform: capitalize;
-    column-gap: 0.5rem;
+    font-weight: 700;
     font-size: 1rem;
-    max-width: 200px;
+    color: var(--clr-grey-1);
+    letter-spacing: 0;
+    margin: 0 0 0.5rem;
   }
-  .clear-btn {
-    background: var(--clr-red-dark);
-    color: var(--clr-white);
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius);
+
+  .price-range {
+    width: 100%;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+
+    &::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(
+        to right,
+        var(--clr-primary-5) 0%,
+        var(--clr-primary-5) var(--range-progress, 100%),
+        var(--clr-grey-9) var(--range-progress, 100%),
+        var(--clr-grey-9) 100%
+      );
+    }
+
+    &::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--clr-grey-9);
+    }
+
+    &::-moz-range-progress {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--clr-primary-5);
+    }
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.1rem;
+      height: 1.1rem;
+      margin-top: -0.25rem;
+      border-radius: 50%;
+      background: var(--clr-white);
+      border: 2px solid var(--clr-primary-5);
+      box-shadow: var(--shadow-sm);
+      cursor: grab;
+      transition:
+        transform 0.2s var(--ease-out),
+        box-shadow 0.2s var(--ease-out);
+    }
+
+    &:hover::-webkit-slider-thumb,
+    &:focus-visible::-webkit-slider-thumb {
+      transform: scale(1.1);
+      box-shadow: var(--shadow-md);
+    }
+
+    &::-moz-range-thumb {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      background: var(--clr-white);
+      border: 2px solid var(--clr-primary-5);
+      box-shadow: var(--shadow-sm);
+      cursor: grab;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
   }
-  @media (min-width: 768px) {
-    .content {
-      position: sticky;
-      top: 1rem;
+
+  .price-range-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--clr-grey-5);
+    margin-top: 0.4rem;
+    letter-spacing: 0.04em;
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    user-select: none;
+
+    input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+    }
+
+    .track {
+      position: relative;
+      width: 2.4rem;
+      height: 1.3rem;
+      border-radius: 999px;
+      background: var(--clr-grey-9);
+      border: 1px solid rgba(34, 34, 34, 0.08);
+      transition: background 0.3s var(--ease-out);
+      flex-shrink: 0;
+
+      .thumb {
+        position: absolute;
+        top: 50%;
+        left: 3px;
+        transform: translateY(-50%);
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background: var(--clr-white);
+        box-shadow: var(--shadow-sm);
+        transition:
+          left 0.3s var(--ease-out),
+          background 0.3s var(--ease-out);
+      }
+    }
+
+    input:checked + .track {
+      background: var(--gradient-accent);
+
+      .thumb {
+        left: calc(100% - 1.15rem);
+      }
+    }
+
+    input:focus-visible + .track {
+      box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.2);
+    }
+
+    .toggle-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--clr-grey-2);
+      text-transform: none;
+      letter-spacing: 0;
     }
   }
 `;

@@ -1,11 +1,12 @@
 import dotenv from "dotenv";
 import Stripe from "stripe";
+import { ENV } from "../src/constants";
 
 dotenv.config();
 
-const secretKey = process.env.VITE_REACT_APP_STRIP_SECRET_KEY;
+const secretKey = process.env[ENV.STRIPE_SECRET_KEY];
 if (!secretKey) {
-  throw new Error("Stripe secret key is not defined.");
+  throw new Error(`Stripe secret key (${ENV.STRIPE_SECRET_KEY}) is not defined.`);
 }
 
 console.log(secretKey);

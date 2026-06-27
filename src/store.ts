@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { Products } from "./types";
+import type { Products } from "./types";
+// One-source-of-truth typing + initial value for the Sort dropdown. Lives
+// in `useComfye.ts` because that hook is the only place that knows how
+// to translate the slug into dummyjson's `sortBy`/`order` URL params.
+import { DEFAULT_SORT, type SortKey } from "./hooks/useComfye";
 
 // Interface for the filter query state
 interface ComfyStoreQuery {
@@ -9,7 +13,17 @@ interface ComfyStoreQuery {
   numberOfProducts: number;
   category: string;
   company: string;
-  color: string;
+  /** Sort key for the ProductList. Previously lived in FilterContext; moved
+   *  here so the Sort component (and any future consumer) can read/write it
+   *  without dragging in the legacy context. Typed as `SortKey` so any
+   *  new dropdown option that isn't mapped in `useComfye.SORT_PARAMS`
+   *  surfaces here at compile time instead of silently falling back to
+   *  DEFAULT_SORT in the hook. */
+  sort: SortKey;
+  /** Running max of the loaded products — kept in state so consumers like
+   *  PageHero (which doesn't see the products list) can call `clearFilter`
+   *  without passing the value manually. Set by Filter after each product
+   *  load. */
   maxPrice: number;
   minPrice: number;
   price: number;
@@ -24,7 +38,11 @@ interface ComfyStore {
   setNumberOfProducts: (products: Products[]) => void;
   updateCategory: (category: string) => void;
   updateCompany: (company: string) => void;
-  updateColor: (color: string) => void;
+  /** Update the sort key (consumed by Sort/ProductList). */
+  setSort: (sort: SortKey) => void;
+  /** Track the running max price so PageHero can reset filters without a
+   *  maxPrice argument. */
+  setMaxPrice: (maxPrice: number) => void;
   getMaxPrice: (products: Products[]) => number;
   getMinPrice: (products: Products[]) => number;
   updatePrice: (price: number) => void;
@@ -32,8 +50,15 @@ interface ComfyStore {
 }
 
 /**
- * Zustand store for managing product filter and view state.
- * Note: This store may overlap with FilterContext; consider consolidating for better architecture.
+ * Zustand store: single source of truth for product filter and view state.
+ *
+ * Migrated from the legacy `FilterContext` to Zustand; FilterContext has
+ * been deleted from the codebase (see PageHero.tsx + Sort.tsx in-code
+ * history comments) and there is nothing left for this store to overlap
+ * with. Do NOT reintroduce a parallel `FilterContext` — keep all filter /
+ * sort / view state exclusively in this Zustand store so consumers
+ * (Filter, Sort, ProductList, PageHero) share one React Query cache entry
+ * for the derived filter pipeline.
  */
 export const useStore = create<ComfyStore>((set) => ({
   // Initial state
@@ -46,7 +71,7 @@ export const useStore = create<ComfyStore>((set) => ({
     maxPrice: 0,
     category: "all",
     company: "all",
-    color: "all",
+    sort: DEFAULT_SORT,
     price: 0,
   },
 
@@ -98,10 +123,21 @@ export const useStore = create<ComfyStore>((set) => ({
     }));
   },
 
-  // Update color filter
-  updateColor: (color: string) => {
+  // Update sort key (typed as SortKey so the spread into
+  // comfyStoreQuery doesn't widen back to string; sort's type comes
+  // through verbatim into the store).
+  setSort: (sort: SortKey) => {
     set((state) => ({
-      comfyStoreQuery: { ...state.comfyStoreQuery, color },
+      comfyStoreQuery: { ...state.comfyStoreQuery, sort },
+    }));
+  },
+
+  // Track running max price of the loaded catalogue so consumers that
+  // don't see the products list (e.g. PageHero) can reset filters
+  // without having to pass a maxPrice argument around.
+  setMaxPrice: (maxPrice: number) => {
+    set((state) => ({
+      comfyStoreQuery: { ...state.comfyStoreQuery, maxPrice },
     }));
   },
 
@@ -133,7 +169,6 @@ export const useStore = create<ComfyStore>((set) => ({
         searchText: "",
         category: "all",
         company: "all",
-        color: "all",
         price: maxPrice,
       },
     }));

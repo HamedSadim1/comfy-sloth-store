@@ -51,6 +51,16 @@ export default [
       "react-refresh/only-export-components": "off",
       // Codebase already uses `any` legitimately in a few places, treat as a hint
       "@typescript-eslint/no-explicit-any": "off",
+      // Enforce `import type` discipline so the bundler can safely drop
+      // type-only imports on a `npm run lint --fix` run.
+      // `prefer: "type-imports"` makes the autofix split a mixed
+      // value+type import (e.g. `import React, { useCallback } from "react"`)
+      // into a value import + a separate `import type { ... }` line - which
+      // works cleanly with our `isolatedModules: true` tsconfig flag.
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        { prefer: "type-imports" },
+      ],
     },
   },
 ];

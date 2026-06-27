@@ -5,12 +5,19 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { SingleProduct } from "../types";
+import type { SingleProduct } from "../types";
+import { COMMERCE, STORAGE_KEYS } from "../constants";
 
 // Interface for the cart item with additional properties
+//
+// No `color` field — dummyjson products expose no colour attribute,
+// and the AddToCart payload previously threaded through an empty
+// string placeholder for it. We dropped the field outright to avoid
+// carrying a meaningless always-empty value on every cart row; if
+// a real variant model is reintroduced later, this is where the
+// field would come back.
 export interface CartItem extends SingleProduct {
   amount: number;
-  color: string;
   image: string;
 }
 
@@ -23,7 +30,6 @@ interface CartContextProps {
   addToCart: (
     product: SingleProduct,
     amount: number,
-    color: string,
     image: string
   ) => void;
   removeFromCart: (id: string) => void;
@@ -39,15 +45,15 @@ interface CartProviderProps {
   children: React.ReactNode;
 }
 
-// Shipping fee constant
-const SHIPPING_FEE = 534;
+// Shipping fee is now sourced from the centralised COMMERCE namespace so
+// the cart, checkout, and product trust-row copy stay in lockstep.
 
 // CartProvider component
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   // Function to get cart from localStorage, used as lazy initializer for useState
   const getLocalStorage = useCallback((): CartItem[] => {
     try {
-      const cart = localStorage.getItem("cart");
+      const cart = localStorage.getItem(STORAGE_KEYS.CART);
       return cart ? JSON.parse(cart) : [];
     } catch (error) {
       console.warn("Failed to parse cart from localStorage:", error);
@@ -59,22 +65,22 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>(getLocalStorage);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
-  const shippingFee = SHIPPING_FEE; // Constant shipping fee
+  const shippingFee = COMMERCE.SHIPPING_FEE_CENTS;
 
   // Function to add product to cart, memoized for performance
   const addToCart = useCallback(
-    (product: SingleProduct, amount: number, color: string, image: string) => {
+    (product: SingleProduct, amount: number, image: string) => {
       setCart((prevCart) => {
         const existingProduct = prevCart.find((item) => item.id === product.id);
 
         if (existingProduct) {
-          // Update amount and color for existing product
+          // Update amount and image for existing product
           return prevCart.map((item) =>
-            item.id === product.id ? { ...item, amount, color, image } : item
+            item.id === product.id ? { ...item, amount, image } : item
           );
         } else {
           // Add new product to cart
-          return [...prevCart, { ...product, amount, color, image }];
+          return [...prevCart, { ...product, amount, image }];
         }
       });
     },
@@ -128,7 +134,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     // Save cart to localStorage
     try {
-      localStorage.setItem("cart", JSON.stringify(cart));
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
     } catch (error) {
       console.warn("Failed to save cart to localStorage:", error);
     }

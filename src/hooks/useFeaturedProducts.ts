@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Products } from "../types";
+import type { Products } from "../types";
 import useComfys from "./useComfye";
 
 // Interface for the return type of the hook
@@ -17,10 +17,14 @@ interface UseFeaturedProductsReturn {
 const useFeaturedProducts = (): UseFeaturedProductsReturn => {
   const { data, error, isLoading } = useComfys();
 
-  // Memoize the filtered featured products to avoid unnecessary recalculations
+  // Memoize the filtered featured products to avoid unnecessary recalculations.
+  // `data` from `useComfys` is now an `InfiniteData<ProductsPage>` — we flatMap
+  // across loaded pages to derive the accumulated Products[] before filtering.
   const featuredProducts = useMemo(() => {
     if (!data) return undefined;
-    return data.filter((product: Products) => product.featured === true);
+    return data.pages
+      .flatMap((page) => page.products)
+      .filter((product: Products) => product.featured === true);
   }, [data]);
 
   return { featuredProducts, error, isLoading };

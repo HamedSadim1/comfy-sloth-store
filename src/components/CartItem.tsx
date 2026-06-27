@@ -1,40 +1,57 @@
 import React, { useCallback } from "react";
 import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaCheckCircle } from "react-icons/fa";
 import { useCartContext } from "../Context/CartContext";
 import type { CartItem as CartItemType } from "../Context/CartContext";
 import AmountButton from "./AmountButton";
+import Button from "./Button";
+import { gradientText } from "../styles/gradientText";
 
 // Define interface for props
 interface CartItemProps {
   items: CartItemType;
 }
 
-// Sub-component for item information (image, name, color, price)
+// Sub-component for item information (image, name, price, shipping).
+// No `color` field here: dummyjson products expose no real colour
+// data, so the cart item carries an empty string for the colour
+// slot and we don't render anything for it.
 interface ItemInfoProps {
   image: string;
   name: string;
-  color: string;
   price: number;
+  shipping: boolean;
 }
 
-const ItemInfo: React.FC<ItemInfoProps> = ({ image, name, color, price }) => (
+const ItemInfo: React.FC<ItemInfoProps> = ({
+  image,
+  name,
+  price,
+  shipping,
+}) => (
   <div className="title">
-    <img src={image} alt={name} />
-    <div>
-      <h5 className="name">{name}</h5>
-      <p className="color">
-        color : <span style={{ background: color }}></span>
+    <div className="image">
+      <img src={image} alt={name} loading="lazy" />
+    </div>
+    <div className="meta">
+      <h3 className="name">{name}</h3>
+      <p className="price-mobile" aria-label={`Price ${formatPrice(price)}`}>
+        {formatPrice(price)}
       </p>
-      <h5 className="price-small">{formatPrice(price)}</h5>
+      {shipping && (
+        <p className="shipping">
+          <FaCheckCircle aria-hidden="true" />
+          Free shipping
+        </p>
+      )}
     </div>
   </div>
 );
 
 // Main functional component for cart item
 const CartItem: React.FC<CartItemProps> = ({ items: cartData }) => {
-  const { image, id, name, price, color, stock, amount } = cartData;
+  const { image, id, name, price, stock, amount, shipping } = cartData;
 
   // Store selectors
   const { removeFromCart, toggleAmount } = useCartContext();
@@ -58,161 +75,219 @@ const CartItem: React.FC<CartItemProps> = ({ items: cartData }) => {
 
   // Ensure amount is defined, default to 0 if not
   const safeAmount = amount ?? 0;
+  const subtotal = price * safeAmount;
 
   return (
     <Wrapper>
-      <ItemInfo image={image} name={name} color={color} price={price} />
-      <h5 className="price">{formatPrice(price)}</h5>
-      <AmountButton
-        amount={safeAmount}
-        increase={handleIncrease}
-        decrease={handleDecrease}
+      <ItemInfo
+        image={image}
+        name={name}
+        price={price}
+        shipping={shipping === true}
       />
-      <h5 className="subtotal">{formatPrice(price * safeAmount)}</h5>
-      <button
+      <p className="price">{formatPrice(price)}</p>
+      <div className="stepper">
+        <AmountButton
+          amount={safeAmount}
+          increase={handleIncrease}
+          decrease={handleDecrease}
+        />
+      </div>
+      <p className="subtotal" aria-label={`Subtotal ${formatPrice(subtotal)}`}>
+        {formatPrice(subtotal)}
+      </p>
+      <Button
         type="button"
-        className="remove-btn"
+        variant="icon"
         onClick={handleRemove}
         aria-label={`Remove ${name} from cart`}
-      >
-        <FaTrash />
-      </button>
+        iconRight={<FaTrash />}
+      />
     </Wrapper>
   );
 };
 
 const Wrapper = styled.article`
-  .subtotal {
-    display: none;
+  display: grid;
+  gap: 1rem 1rem;
+  background: var(--clr-white);
+  border: 1px solid rgba(34, 34, 34, 0.06);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-xs);
+  align-items: center;
+  transition:
+    transform 0.4s var(--ease-out),
+    box-shadow 0.4s var(--ease-out),
+    border-color 0.4s var(--ease-out);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(204, 152, 110, 0.3);
   }
+
+  /* Image */
+  .image {
+    width: 96px;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--clr-primary-9);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s var(--ease-out);
+    }
+  }
+
+  /* On hover card, gently zoom the image */
+  &:hover .image img {
+    transform: scale(1.04);
+  }
+
+  /* Title cluster (image + meta) */
+  .title {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 1rem;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .name {
+    color: var(--clr-grey-1);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.3;
+    margin: 0;
+    /* Allow up to two lines, then truncate */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .price-mobile {
+    color: var(--clr-grey-5);
+    font-size: 0.85rem;
+    margin: 0.15rem 0 0;
+    font-weight: 600;
+  }
+
+  .shipping {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: hsl(125, 50%, 32%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0.15rem 0 0;
+    letter-spacing: 0;
+  }
+
+  .shipping svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  /* Per-line desktop/mobile prices */
   .price {
     display: none;
   }
-  display: grid;
-  grid-template-columns: 200px auto auto;
-  grid-template-rows: 75px;
-  gap: 3rem 1rem;
-  justify-items: center;
-  margin-bottom: 3rem;
-  align-items: center;
-  .title {
-    grid-template-rows: 75px;
-    display: grid;
-    grid-template-columns: 75px 125px;
-    align-items: center;
-    text-align: left;
-    gap: 1rem;
-  }
-  img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    border-radius: var(--radius);
-    object-fit: cover;
-  }
-  h5 {
-    font-size: 0.75rem;
-    margin-bottom: 0;
+
+  .subtotal {
+    display: none;
   }
 
-  .color {
-    color: var(--clr-grey-5);
-    font-size: 0.75rem;
-    letter-spacing: var(--spacing);
-    text-transform: capitalize;
-    margin-bottom: 0;
-    display: flex;
+  /* Stepper wrapper keeps AmountButton sized the same on both placements */
+  .stepper {
+    display: grid;
+    justify-items: center;
+  }
+
+  /* ============== Mobile stacked layout ============== */
+  .title {
+    grid-column: 1 / -1;
+  }
+
+  .stepper {
+    grid-column: 1 / -1;
+    justify-items: start;
+  }
+
+  /* On mobile: gentle two-column row for price line + remove */
+  .price-mobile {
+    display: block;
+  }
+
+  /* Hide desktop-only columns explicitly */
+  .price,
+  .subtotal {
+    display: none;
+  }
+
+  /* ============== Desktop grid alignment ============== */
+  @media (min-width: 768px) {
+    padding: 1.25rem 1.25rem;
+    grid-template-columns: 100px 1fr 110px 1fr 40px;
+    column-gap: 1rem;
     align-items: center;
-    justify-content: flex-start;
-    span {
-      display: inline-block;
-      width: 0.5rem;
-      height: 0.5rem;
-      background: red;
-      margin-left: 0.5rem;
-      border-radius: var(--radius);
+
+    /* Title occupies image + meta cells */
+    .title {
+      grid-column: 1 / span 2;
+      grid-template-columns: 100px 1fr;
+      display: grid;
+      column-gap: 1rem;
+      align-items: center;
+      align-self: stretch;
     }
-  }
-  .price-small {
-    color: var(--clr-primary-5);
-  }
-  .amount-btns {
-    width: 75px;
-    button {
-      width: 1rem;
-      height: 0.5rem;
-      font-size: 0.75rem;
+
+    .image {
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-md);
     }
-    h2 {
-      font-size: 1rem;
-    }
-  }
-  .remove-btn {
-    color: var(--clr-white);
-    background: transparent;
-    border: transparent;
-    letter-spacing: var(--spacing);
-    background: var(--clr-red-dark);
-    width: 1.5rem;
-    height: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius);
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-  @media (min-width: 776px) {
-    .subtotal {
-      display: block;
-      margin-bottom: 0;
-      color: var(--clr-grey-5);
-      font-weight: 400;
-      font-size: 1rem;
-    }
-    .price-small {
+
+    .price-mobile {
       display: none;
     }
-    .price {
+
+    /* Show desktop-only columns */
+    .price,
+    .subtotal {
       display: block;
-      font-size: 1rem;
-      color: var(--clr-primary-5);
-      font-weight: 400;
+      text-align: right;
+      font-size: 0.95rem;
+      color: var(--clr-grey-2);
+      font-weight: 500;
+      margin: 0;
+      letter-spacing: 0;
     }
-    .name {
-      font-size: 0.85rem;
+
+    .subtotal {
+      ${gradientText}
+      font-weight: 700;
+      font-size: 1.05rem;
     }
-    .color {
-      font-size: 0.85rem;
-      span {
-        width: 0.75rem;
-        height: 0.75rem;
-      }
-    }
-    grid-template-columns: 1fr 1fr 1fr 1fr auto;
-    align-items: center;
-    grid-template-rows: 75px;
-    img {
-      height: 100%;
-    }
-    .title {
-      height: 100%;
-      display: grid;
-      grid-template-columns: 100px 200px;
-      align-items: center;
-      gap: 1rem;
-      text-align: left;
-    }
-    .amount-btns {
-      width: 100px;
-      button {
-        width: 1.5rem;
-        height: 1rem;
-        font-size: 1rem;
-      }
-      h2 {
-        font-size: 1.5rem;
-      }
+
+    .stepper {
+      grid-column: 3;
+      justify-self: center;
     }
   }
 `;

@@ -1,13 +1,21 @@
-import axios, { AxiosInstance, AxiosRequestConfig, CanceledError } from "axios";
+import type { AxiosInstance, AxiosRequestConfig} from "axios";
+import axios, { CanceledError } from "axios";
+import { NETWORK, STORAGE_KEYS } from "../constants";
 
 /**
  * Custom error class for API errors.
+ *
+ * `data` is intentionally typed as `unknown` — backend error payloads
+ * are heterogeneous across services (string, `{ message }`,
+ * `{ error }`, etc.). Call `narrowApiErrorPayload(error.data)` before
+ * reading individual fields, so the narrow shape is opt-in, not
+ * implicit.
  */
 export class APIError extends Error {
   public status?: number;
-  public data?: any;
+  public data?: unknown;
 
-  constructor(message: string, status?: number, data?: any) {
+  constructor(message: string, status?: number, data?: unknown) {
     super(message);
     this.name = "APIError";
     this.status = status;
@@ -16,19 +24,56 @@ export class APIError extends Error {
 }
 
 /**
- * Generic API response type.
+ * Defensive shape extracted from unknown error-response data.
+ *
+ * Backend errors come in many forms (the dummyjson wire returns
+ * `{ message: string }`, others use `{ error: string }`, some send
+ * a plain string). This is the narrow shape we actually consume; the
+ * rest of the upstream payload is intentionally dropped so a future
+ * unknown field can never leak straight into a render or a log.
  */
-export interface APIResponse<T> {
-  data: T;
-  success: boolean;
+export interface ApiErrorPayload {
+  /** Human-readable error message returned by the server, if any. */
   message?: string;
+  /** Optional client-side mapping code (string or numeric). */
+  code?: string | number;
 }
 
 /**
- * Axios instance configured for the application.
+ * Narrow unknown error-response data into a usable shape.
+ *
+ * Pure function, does not throw. Safe to call on any `unknown`
+ * value — primitives, `null`, arrays, nested objects — and always
+ * returns a fully-valid `ApiErrorPayload`. Consumers can drop the
+ * helper if they need a different field subset.
+ */
+export function narrowApiErrorPayload(value: unknown): ApiErrorPayload {
+  if (value === null || typeof value !== "object") return {};
+  const v = value as Record<string, unknown>;
+  const message = typeof v.message === "string" ? v.message : undefined;
+  let code: string | number | undefined;
+  if (typeof v.code === "string" || typeof v.code === "number") {
+    code = v.code;
+  }
+  return { message, code };
+}
+
+/**
+ * Wrapper shape returned by dummyjson.com for any list endpoint
+ * (`/products`, `/products/category/:slug`, `/products/search`).
+ */
+export interface DummyProductsResponse<T> {
+  products: T[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+/**
+ * Axios instance configured for dummyjson.com.
  */
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: "https://course-api.com",
+  baseURL: NETWORK.BASE_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -39,7 +84,7 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -86,17 +131,41 @@ class APIClient<T> {
   }
 
   /**
-   * Fetches all items from the endpoint.
+   * Fetches all items from a dummyjson list endpoint.
+   * The list endpoints return a wrapper { products, total, skip, limit };
+   * this method unwraps `.products` for caller convenience.
    * @param config - Optional Axios request configuration
    * @returns Promise resolving to array of items
    */
   async getAll(config?: AxiosRequestConfig): Promise<T[]> {
     try {
-      const response = await axiosInstance.get<T[]>(this.endpoint, config);
+      const response = await axiosInstance.get<DummyProductsResponse<T>>(
+        this.endpoint,
+        config
+      );
+      return response.data.products;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Returns the full paginated wrapper response (products + total + skip + limit).
+   * Useful when you need to know how many results exist beyond this page.
+   */
+  async getAllRaw(
+    config?: AxiosRequestConfig
+  ): Promise<DummyProductsResponse<T>> {
+    try {
+      const response = await axiosInstance.get<DummyProductsResponse<T>>(
+        this.endpoint,
+        config
+      );
       return response.data;
     } catch (error) {
       this.handleError(error);
-      throw error; // Re-throw after logging
+      throw error;
     }
   }
 
@@ -212,7 +281,7 @@ class APIClient<T> {
    * @param error - The error to handle
    * @private
    */
-  private handleError(error: any): void {
+  private handleError(error: unknown): void {
     if (error instanceof APIError) {
       console.error(
         `API Error [${error.status}]: ${error.message}`,

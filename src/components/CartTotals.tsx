@@ -1,55 +1,45 @@
 import React, { useCallback } from "react";
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 import { useCartContext } from "../Context/CartContext";
 import { useUserContext } from "../Context/UserContext";
-import { formatPrice } from "../utils/helper";
-import { Link } from "react-router-dom";
-
-// Define types for sub-component props
-interface TotalsDisplayProps {
-  totalAmount: number;
-  shippingFee: number;
-}
+import { HiArrowRight } from "react-icons/hi";
+import Button from "./Button";
+import OrderSummary from "./OrderSummary";
 
 interface ActionButtonProps {
   isLoggedIn: boolean;
   onLogin: () => void;
 }
 
-// Sub-component for displaying totals
-const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
-  totalAmount,
-  shippingFee,
-}) => (
-  <article>
-    <h5>
-      subtotal : <span>{formatPrice(totalAmount)}</span>
-    </h5>
-    <p>
-      shipping fee : <span>{formatPrice(shippingFee)}</span>
-    </p>
-    <hr />
-    <h4>
-      order total : <span>{formatPrice(totalAmount + shippingFee)}</span>
-    </h4>
-  </article>
-);
-
-// Sub-component for action button (checkout or login)
+// Sub-component for action button (checkout vs login). The primary
+// (logged-in) variant uses the shared <Button /> primitive as a Link.
+// The secondary (logged-out) variant stays inline because its
+// grey-1 → primary-2 fill differs from the available Button variants.
 const ActionButton: React.FC<ActionButtonProps> = ({ isLoggedIn, onLogin }) =>
   isLoggedIn ? (
-    <Link to="/checkout" className="btn">
-      proceed to checkout
-    </Link>
+    <Button
+      as={Link}
+      to="/checkout"
+      variant="primary"
+      fullWidth
+      iconRight={<HiArrowRight />}
+    >
+      Proceed to checkout
+    </Button>
   ) : (
-    <button type="button" className="btn" onClick={onLogin}>
-      login
+    <button
+      type="button"
+      className="cta-pill-secondary"
+      onClick={onLogin}
+    >
+      Login to checkout
+      <HiArrowRight />
     </button>
   );
 
-// Main functional component for cart totals
 const CartTotals: React.FC = () => {
-  const { totalAmount, shippingFee } = useCartContext();
+  const { totalAmount, shippingFee, totalItems } = useCartContext();
   const { myUser, loginWithRedirect } = useUserContext();
 
   // Handler for login, memoized for performance
@@ -59,43 +49,74 @@ const CartTotals: React.FC = () => {
 
   return (
     <Wrapper>
-      <div>
-        <TotalsDisplay totalAmount={totalAmount} shippingFee={shippingFee} />
-        <ActionButton isLoggedIn={!!myUser} onLogin={handleLogin} />
-      </div>
+      <OrderSummary
+        totalAmount={totalAmount}
+        totalItems={totalItems}
+        shippingFee={shippingFee}
+        itemNoun="item"
+        subtotalPrefix="Subtotal"
+        title="Cart total"
+        showFreeHint
+      />
+      <ActionButton isLoggedIn={!!myUser} onLogin={handleLogin} />
+      <p className="tax-note">Taxes calculated at checkout.</p>
     </Wrapper>
   );
 };
 
 const Wrapper = styled.section`
-  margin-top: 3rem;
-  display: flex;
-  justify-content: center;
-  article {
-    border: 1px solid var(--clr-grey-8);
-    border-radius: var(--radius);
-    padding: 1.5rem 3rem;
-  }
-  h4,
-  h5,
-  p {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-  }
-  p {
-    text-transform: capitalize;
-  }
-  h4 {
-    margin-top: 2rem;
-  }
-  @media (min-width: 776px) {
-    justify-content: flex-end;
-  }
-  .btn {
+  width: 100%;
+
+  /* Secondary (logged-out) CTA keeps its own styling because the
+     grey-1 → primary-2 fill isn't represented in the Button variants. */
+  .cta-pill-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
     width: 100%;
-    margin-top: 1rem;
+    padding: 1.05rem 1.5rem;
+    margin-top: 1.25rem;
+    border-radius: var(--radius-full);
+    background: var(--clr-grey-1);
+    color: var(--clr-white);
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition:
+      transform 0.3s var(--ease-out),
+      box-shadow 0.3s var(--ease-out),
+      filter 0.3s var(--ease-out);
+
+    svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      transition: transform 0.3s var(--ease-out);
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--clr-primary-2);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      filter: brightness(1.05);
+      outline: none;
+    }
+
+    &:hover svg,
+    &:focus-visible svg {
+      transform: translateX(4px);
+    }
+  }
+
+  .tax-note {
+    font-size: 0.72rem;
+    color: var(--clr-grey-6);
     text-align: center;
-    font-weight: 700;
+    margin: 0.85rem 0 0;
   }
 `;
 
