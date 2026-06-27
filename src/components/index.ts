@@ -17,6 +17,8 @@ import Filters from "./Filter";
 import ProductList from "./ProductList";
 import Sort from "./Sort";
 import Stars from "./Stars";
+import CartHero from "./CartHero";
+import CartEmptyState from "./CartEmptyState";
 import CartContent from "./CarContent";
 import PageHero from "./PageHero";
 import StripeCheckout from "./StripeCheckout";
@@ -45,6 +47,8 @@ export {
   ProductList,
   Sort,
   Stars,
+  CartHero,
+  CartEmptyState,
   CartContent,
   PageHero,
   StripeCheckout,
