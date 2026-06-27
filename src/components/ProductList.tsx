@@ -193,10 +193,21 @@ const ProductList: React.FC = () => {
     );
   }
 
-  // `total` reported by the server (same on every page). Used for the
-  // honest "N of M loaded" copy while more pages exist.
+  // `total` reported by the server (same on every page). `loaded` is the
+  // accumulated Products[] across page buffer; `total` / `loaded` reflect
+  // what the API has returned, NOT what the user sees — client-side
+  // filters in useFilterProducts narrow that set further.
   const total = data?.pages[data.pages.length - 1]?.total ?? 0;
   const loaded = products.length;
+  // Derived copy-friendly counts. EndNote + LoadMoreArea hint now use
+  // `filteredCount` so the "you've seen all N" line never disagrees with
+  // the visible grid (fixes the loaded-vs-filtered discrepancy where a
+  // 6-product category with one active client filter rendered 1 card
+  // but copy claimed "you've seen all 6"). `isFiltered` lets us hint at
+  // the latent total so the user can tell "filtering narrowed this" vs.
+  // "the category truly only has N items".
+  const filteredCount = filteredProducts.length;
+  const isFiltered = filteredCount < loaded;
 
   return (
     <>
@@ -210,7 +221,18 @@ const ProductList: React.FC = () => {
         <ListView products={filteredProducts} />
       )}
 
-      {filteredProducts.length === 0 ? null : hasNextPage ? (
+      {filteredCount === 0 && loaded > 0 ? (
+        // Active filter knocked out everything: show a friendly empty
+        // state instead of an invisible page (and instead of the prior
+        // "you've seen all N" copy that disagreed with the empty grid).
+        <EmptyState role="status" aria-live="polite">
+          <p className="empty-title">No products match your filter</p>
+          <p className="empty-hint">
+            {loaded} {loaded === 1 ? "product is" : "products are"} available
+            in this category — try clearing some filters in the sidebar.
+          </p>
+        </EmptyState>
+      ) : filteredCount === 0 ? null : hasNextPage ? (
         <LoadMoreArea aria-label="Pagination">
           {/* Sentinel — observed by IntersectionObserver to trigger auto-fetch */}
           <div ref={sentinelRef} aria-hidden="true" className="sentinel" />
@@ -220,20 +242,36 @@ const ProductList: React.FC = () => {
             onClick={handleLoadMore}
             disabled={isFetchingNextPage}
             aria-label={`Load more products${
-              total ? ` (${loaded} of ${total} loaded)` : ""
+              total ? ` (${filteredCount} of ${total} matching)` : ""
             }`}
           >
             {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
           <p className="hint" aria-live="polite">
-            Showing {loaded} of {total}{" "}{pluralize(total, "product").replace(/^\d+\s/, "")} loaded
+            Showing {filteredCount} of {total}{" "}
+            {pluralize(total, "product").replace(/^\d+\s/, "")} loaded
+            {isFiltered && (
+              <span className="hint-detail">
+                {" "}
+                (narrowed from {loaded} by your filter)
+              </span>
+            )}
           </p>
         </LoadMoreArea>
       ) : (
         <EndNote aria-label="Pagination">
           <span className="dot" aria-hidden="true" />
           <span>
-            You&rsquo;ve seen all {pluralize(loaded, "product")}
+            You&rsquo;ve seen all {pluralize(filteredCount, "product")}
+            {isFiltered && (
+              <span className="endnote-detail">
+                {" "}
+                matching your filter
+                {loaded > filteredCount && (
+                  <> ({loaded} total in this category)</>
+                )}
+              </span>
+            )}
           </span>
         </EndNote>
       )}
@@ -300,12 +338,16 @@ const LoadMoreArea = styled.div`
     }
   }
 
-  .hint {
-    margin: 0;
-    font-size: 0.78rem;
-    color: var(--clr-grey-5);
-    letter-spacing: 0;
-  }
+.hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--clr-grey-5);
+  letter-spacing: 0;
+}
+
+.hint-detail {
+  color: var(--clr-grey-6);
+}
 `;
 
 const EndNote = styled.div`
@@ -328,6 +370,35 @@ const EndNote = styled.div`
     height: 0.55rem;
     border-radius: 50%;
     background: var(--clr-primary-5);
+  }
+
+  .endnote-detail {
+    color: var(--clr-grey-5);
+    font-weight: 500;
+  }
+`;
+
+const EmptyState = styled.div`
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+
+  .empty-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--clr-grey-2);
+    margin: 0;
+    letter-spacing: 0;
+  }
+
+  .empty-hint {
+    font-size: 0.85rem;
+    color: var(--clr-grey-5);
+    margin: 0;
+    max-width: 28rem;
   }
 `;
 
