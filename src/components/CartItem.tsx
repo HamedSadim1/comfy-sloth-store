@@ -6,7 +6,6 @@ import { useCartContext } from "../Context/CartContext";
 import type { CartItem as CartItemType } from "../Context/CartContext";
 import AmountButton from "./AmountButton";
 import Button from "./Button";
-import ColorSwatch from "./ColorSwatch";
 import { gradientText } from "../styles/gradientText";
 
 // Define interface for props
@@ -14,11 +13,13 @@ interface CartItemProps {
   items: CartItemType;
 }
 
-// Sub-component for item information (image, name, color, price)
+// Sub-component for item information (image, name, price, shipping).
+// No `color` field here: dummyjson products expose no real colour
+// data, so the cart item carries an empty string for the colour
+// slot and we don't render anything for it.
 interface ItemInfoProps {
   image: string;
   name: string;
-  color: string;
   price: number;
   shipping: boolean;
 }
@@ -26,7 +27,6 @@ interface ItemInfoProps {
 const ItemInfo: React.FC<ItemInfoProps> = ({
   image,
   name,
-  color,
   price,
   shipping,
 }) => (
@@ -36,12 +36,6 @@ const ItemInfo: React.FC<ItemInfoProps> = ({
     </div>
     <div className="meta">
       <h3 className="name">{name}</h3>
-      {color && (
-        <p className="color">
-          <ColorSwatch color={color} size="xs" />
-          <span className="dot-label">Color</span>
-        </p>
-      )}
       <p className="price-mobile" aria-label={`Price ${formatPrice(price)}`}>
         {formatPrice(price)}
       </p>
@@ -57,7 +51,7 @@ const ItemInfo: React.FC<ItemInfoProps> = ({
 
 // Main functional component for cart item
 const CartItem: React.FC<CartItemProps> = ({ items: cartData }) => {
-  const { image, id, name, price, color, stock, amount, shipping } = cartData;
+  const { image, id, name, price, stock, amount, shipping } = cartData;
 
   // Store selectors
   const { removeFromCart, toggleAmount } = useCartContext();
@@ -88,7 +82,6 @@ const CartItem: React.FC<CartItemProps> = ({ items: cartData }) => {
       <ItemInfo
         image={image}
         name={name}
-        color={color}
         price={price}
         shipping={shipping === true}
       />
@@ -186,21 +179,6 @@ const Wrapper = styled.article`
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .color {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    color: var(--clr-grey-5);
-    font-size: 0.78rem;
-    margin: 0;
-    letter-spacing: 0;
-  }
-
-  .dot-label {
-    text-transform: capitalize;
-    letter-spacing: 0.04em;
   }
 
   .price-mobile {

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Color, Products } from "../types";
+import { Products } from "../types";
 import { NO_BRAND_FILTER } from "../utils/helper";
 
 // Interface for the hook parameters
@@ -9,7 +9,6 @@ interface UseFilterProductsParams {
   showAllFreeShipping: boolean;
   category: string;
   company: string;
-  color: string;
   price: number;
 }
 
@@ -25,7 +24,6 @@ const useFilterProducts = ({
   showAllFreeShipping,
   category,
   company,
-  color,
   price,
 }: UseFilterProductsParams): Products[] => {
   const filteredProducts = useMemo(() => {
@@ -74,13 +72,6 @@ const useFilterProducts = ({
         return product.company === company;
       })
       .filter((product) => {
-        // Filter by color
-        if (color.toLowerCase() === "all") {
-          return true;
-        }
-        return product.colors.includes(color as Color);
-      })
-      .filter((product) => {
         // Filter by maximum price
         return product.price <= price;
       });
@@ -90,7 +81,6 @@ const useFilterProducts = ({
     showAllFreeShipping,
     category,
     company,
-    color,
     price,
   ]);
 

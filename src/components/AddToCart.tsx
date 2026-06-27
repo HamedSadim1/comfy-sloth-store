@@ -1,85 +1,47 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import styled from "styled-components";
 import { FaShoppingCart } from "react-icons/fa";
 import { SingleProduct } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
 import { useCartContext } from "../Context/CartContext";
 import AmountButtons from "./AmountButton";
-import ColorSwatch from "./ColorSwatch";
 
 // Define types for props
 interface AddToCartProps {
   product: SingleProduct;
 }
 
-interface ColorSelectorProps {
-  colors: string[];
-  mainColor: string;
-  onColorChange: (color: string) => void;
-}
-
-// Separate component for color selection to improve reusability and readability.
-// Uses the shared `<ColorSwatch>` primitive (interactive variant) so the
-// swatch visuals stay aligned with the Filter sidebar's swatches.
-const ColorSelector: React.FC<ColorSelectorProps> = ({
-  colors,
-  mainColor,
-  onColorChange,
-}) => {
-  return (
-    <div className="colors" role="radiogroup" aria-label="Product color">
-      <span className="label">Color</span>
-      <div className="swatches">
-        {colors.map((color) => {
-          const isActive = mainColor === color;
-          return (
-            <ColorSwatch
-              key={color}
-              color={color}
-              size="lg"
-              active={isActive}
-              ariaLabel={`Select color ${color}`}
-              onClick={() => onColorChange(color)}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// Main component using functional component with hooks
+// Main component using functional component with hooks.
+//
+// Color picker: removed (dummyjson exposes no `color` field per
+// product). The cart payload is still typed as `addToCart(product,
+// amount, color, image)`, so we pass an empty string for the
+// `color` slot to keep the CartContext payload shape stable. The
+// downstream CartItem previously rendered a coloured swatch row
+// keyed off `cartItem.color`; that branch is also gone, so the
+// empty string stays inert across the pipeline.
 const AddToCart: React.FC<AddToCartProps> = ({ product }) => {
-  const { stock, colors } = product;
-
-  // Local state for selected color, initialized to first color
-  const [mainColor, setMainColor] = useState<string>(colors[0]);
+  const { stock } = product;
 
   // Store selectors for state and actions
   const { addToCart } = useCartContext();
-  const setColor = useSingleProductStore((state) => state.setColor);
   const increaseAmount = useSingleProductStore((state) => state.increaseAmount);
   const decreaseAmount = useSingleProductStore((state) => state.decreaseAmount);
   const amount = useSingleProductStore((state) => state.amount);
   const image = useSingleProductStore((state) => state.image);
 
-  // Handler for color change, updates both local and store state
-  const handleColorChange = useCallback(
-    (color: string) => {
-      setMainColor(color);
-      setColor(color);
-    },
-    [setColor]
-  );
-
-  // Handler for adding to cart, ensures image is available before proceeding
+  // Handler for adding to cart, ensures image is available before proceeding.
+  // The CartContext signature now takes (product, amount, image) — the
+  // empty-string colour placeholder that AddToCart previously thread
+  // through is gone, since dummyjson has no real colour data and the
+  // `CartItem.color` field was deleted in lockstep.
   const handleAddToCart = useCallback(() => {
     if (!image) {
       console.error("No image selected for the product");
       return;
     }
-    addToCart(product, amount, mainColor, image);
-  }, [addToCart, product, amount, mainColor, image]);
+    addToCart(product, amount, image);
+  }, [addToCart, product, amount, image]);
 
   // Handler for increasing amount, prevents exceeding stock
   const handleIncrease = useCallback(() => {
@@ -90,12 +52,6 @@ const AddToCart: React.FC<AddToCartProps> = ({ product }) => {
 
   return (
     <Wrapper>
-      <ColorSelector
-        colors={colors}
-        mainColor={mainColor}
-        onColorChange={handleColorChange}
-      />
-
       <div className="qty-row">
         <span className="label">Quantity</span>
         <AmountButtons
@@ -132,16 +88,6 @@ const Wrapper = styled.section`
     letter-spacing: 0.16em;
     color: var(--clr-grey-3);
     margin-bottom: 0.55rem;
-  }
-
-  /* Color picker — visuals come from the shared <ColorSwatch /> primitive;
-     we only style the surrounding swatch container + spacing. */
-  .colors {
-    .swatches {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.55rem;
-    }
   }
 
   /* Quantity row */

@@ -8,9 +8,15 @@ import React, {
 import { SingleProduct } from "../types";
 
 // Interface for the cart item with additional properties
+//
+// No `color` field — dummyjson products expose no colour attribute,
+// and the AddToCart payload previously threaded through an empty
+// string placeholder for it. We dropped the field outright to avoid
+// carrying a meaningless always-empty value on every cart row; if
+// a real variant model is reintroduced later, this is where the
+// field would come back.
 export interface CartItem extends SingleProduct {
   amount: number;
-  color: string;
   image: string;
 }
 
@@ -23,7 +29,6 @@ interface CartContextProps {
   addToCart: (
     product: SingleProduct,
     amount: number,
-    color: string,
     image: string
   ) => void;
   removeFromCart: (id: string) => void;
@@ -63,18 +68,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Function to add product to cart, memoized for performance
   const addToCart = useCallback(
-    (product: SingleProduct, amount: number, color: string, image: string) => {
+    (product: SingleProduct, amount: number, image: string) => {
       setCart((prevCart) => {
         const existingProduct = prevCart.find((item) => item.id === product.id);
 
         if (existingProduct) {
-          // Update amount and color for existing product
+          // Update amount and image for existing product
           return prevCart.map((item) =>
-            item.id === product.id ? { ...item, amount, color, image } : item
+            item.id === product.id ? { ...item, amount, image } : item
           );
         } else {
           // Add new product to cart
-          return [...prevCart, { ...product, amount, color, image }];
+          return [...prevCart, { ...product, amount, image }];
         }
       });
     },

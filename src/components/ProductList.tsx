@@ -30,7 +30,6 @@ const ProductList: React.FC = () => {
   const category = useStore((state) => state.comfyStoreQuery.category);
   const sort = useStore((state) => state.comfyStoreQuery.sort);
   const company = useStore((state) => state.comfyStoreQuery.company);
-  const color = useStore((state) => state.comfyStoreQuery.color);
   const price = useStore((state) => state.comfyStoreQuery.price);
 
   // Server-paginated fetch with React Query. `data` is
@@ -83,7 +82,6 @@ const ProductList: React.FC = () => {
     showAllFreeShipping: freeShipping,
     category,
     company,
-    color,
     price,
   });
 
@@ -105,10 +103,9 @@ const ProductList: React.FC = () => {
         freeShipping,
         category,
         company,
-        color,
         price,
       }),
-    [searchText, freeShipping, category, company, color, price]
+    [searchText, freeShipping, category, company, price]
   );
 
   // Tracks "has the user actually scrolled at least once on the current

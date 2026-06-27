@@ -23,7 +23,6 @@ import StripeCheckout from "./StripeCheckout";
 import TrustStrip from "./TrustStrip";
 import Button from "./Button";
 import Eyebrow from "./Eyebrow";
-import ColorSwatch from "./ColorSwatch";
 import OrderSummary from "./OrderSummary";
 
 export {
@@ -52,6 +51,5 @@ export {
   TrustStrip,
   Button,
   Eyebrow,
-  ColorSwatch,
   OrderSummary,
 };

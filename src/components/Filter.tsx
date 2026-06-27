@@ -9,14 +9,12 @@ import styled from "styled-components";
 import { formatPrice, NO_BRAND_FILTER } from "../utils/helper";
 import { FaSearch } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
-import { colors } from "../data";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
 import useCategoryList from "../hooks/useCategoryList";
 import { Products, Category } from "../types";
 import { shimmerFill } from "../styles/shimmer";
 import Button from "./Button";
-import ColorSwatch from "./ColorSwatch";
 
 // Define interfaces for sub-component props
 interface SearchFormProps {
@@ -50,12 +48,6 @@ interface CompanyFilterProps {
   companies: string[];
   selectedCompany: string;
   onCompanyChange: (company: string) => void;
-}
-
-interface ColorFilterProps {
-  colors: string[];
-  selectedColor: string;
-  onColorChange: (color: string) => void;
 }
 
 interface PriceFilterProps {
@@ -225,45 +217,6 @@ const CompanyFilter: React.FC<CompanyFilterProps> = ({
   </FilterGroup>
 );
 
-// Sub-component for color filter — uses the shared <ColorSwatch />
-// primitive so the swatch visuals are aligned with AddToCart.
-const ColorFilter: React.FC<ColorFilterProps> = ({
-  colors,
-  selectedColor,
-  onColorChange,
-}) => {
-  const isAllActive = selectedColor === "all";
-  return (
-    <FilterGroup title="Color">
-      <div className="color-list">
-        <button
-          type="button"
-          name="color"
-          onClick={() => onColorChange("all")}
-          className={isAllActive ? "color-text active" : "color-text"}
-        >
-          all
-        </button>
-        {colors.map((colorData) => {
-          const isActive =
-            selectedColor.toLowerCase() === colorData.toLowerCase();
-          return (
-            <ColorSwatch
-              key={colorData}
-              color={colorData}
-              size="md"
-              active={isActive}
-              ariaLabel={`Filter by color ${colorData}`}
-              onClick={() => onColorChange(colorData)}
-              showCheck
-            />
-          );
-        })}
-      </div>
-    </FilterGroup>
-  );
-};
-
 // Sub-component for price filter
 const PriceFilter: React.FC<PriceFilterProps> = ({
   price,
@@ -338,8 +291,6 @@ const Filter: React.FC = () => {
   const sort = useStore((state) => state.comfyStoreQuery.sort);
   const company = useStore((state) => state.comfyStoreQuery.company);
   const updateCompany = useStore((state) => state.updateCompany);
-  const color = useStore((state) => state.comfyStoreQuery.color);
-  const updateColor = useStore((state) => state.updateColor);
   const clearFilter = useStore((state) => state.clearFilter);
   const getMaxPrice = useStore((state) => state.getMaxPrice);
   const getMinPrice = useStore((state) => state.getMinPrice);
@@ -467,13 +418,6 @@ const Filter: React.FC = () => {
     [updateCompany]
   );
 
-  const handleColorChange = useCallback(
-    (color: string) => {
-      updateColor(color);
-    },
-    [updateColor]
-  );
-
   const handlePriceChange = useCallback(
     (price: number) => {
       updatePrice(price);
@@ -502,12 +446,6 @@ const Filter: React.FC = () => {
           companies={brandOptions}
           selectedCompany={company}
           onCompanyChange={handleCompanyChange}
-        />
-        <hr className="divider" />
-        <ColorFilter
-          colors={colors}
-          selectedColor={color}
-          onColorChange={handleColorChange}
         />
         <hr className="divider" />
         <PriceFilter
@@ -647,7 +585,7 @@ const Wrapper = styled.aside`
     }
 
     /* Skeleton placeholder shown while the /products/category-list
-       query is pending — same DOM shape as a chip so the layout
+       query is pending - same DOM shape as a chip so the layout
        doesn't shift when the real chips arrive. */
     .chip-skeleton {
       ${shimmerFill}
@@ -657,7 +595,7 @@ const Wrapper = styled.aside`
       pointer-events: none;
     }
 
-    /* "+N more" pill under the visible chips — sticky-styled visually
+    /* "+N more" pill under the visible chips - sticky-styled visually
        via a soft fill so it reads as a different affordance. */
     .show-all-pill {
       background: var(--clr-primary-10);
@@ -727,36 +665,9 @@ const Wrapper = styled.aside`
     }
   }
 
-  .color-list {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-
-    .color-text {
-      background: transparent;
-      border: none;
-      padding: 0.2rem 0.4rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--clr-grey-5);
-      text-transform: capitalize;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition:
-        color 0.3s var(--ease-out),
-        border-color 0.3s var(--ease-out);
-
-      &:hover {
-        color: var(--clr-grey-2);
-      }
-
-      &.active {
-        color: var(--clr-primary-2);
-        border-color: var(--clr-primary-5);
-      }
-    }
-  }
+  /* The Color filter was removed entirely - dummyjson exposes no colour
+     field per product, and the previous fake id-derived palette was
+     misleading. No .color-list block remains. */
 
   .price {
     font-weight: 700;

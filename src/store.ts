@@ -13,7 +13,6 @@ interface ComfyStoreQuery {
   numberOfProducts: number;
   category: string;
   company: string;
-  color: string;
   /** Sort key for the ProductList. Previously lived in FilterContext; moved
    *  here so the Sort component (and any future consumer) can read/write it
    *  without dragging in the legacy context. Typed as `SortKey` so any
@@ -39,7 +38,6 @@ interface ComfyStore {
   setNumberOfProducts: (products: Products[]) => void;
   updateCategory: (category: string) => void;
   updateCompany: (company: string) => void;
-  updateColor: (color: string) => void;
   /** Update the sort key (consumed by Sort/ProductList). */
   setSort: (sort: SortKey) => void;
   /** Track the running max price so PageHero can reset filters without a
@@ -66,7 +64,6 @@ export const useStore = create<ComfyStore>((set) => ({
     maxPrice: 0,
     category: "all",
     company: "all",
-    color: "all",
     sort: DEFAULT_SORT,
     price: 0,
   },
@@ -119,13 +116,6 @@ export const useStore = create<ComfyStore>((set) => ({
     }));
   },
 
-  // Update color filter
-  updateColor: (color: string) => {
-    set((state) => ({
-      comfyStoreQuery: { ...state.comfyStoreQuery, color },
-    }));
-  },
-
   // Update sort key (typed as SortKey so the spread into
   // comfyStoreQuery doesn't widen back to string; sort's type comes
   // through verbatim into the store).
@@ -172,7 +162,6 @@ export const useStore = create<ComfyStore>((set) => ({
         searchText: "",
         category: "all",
         company: "all",
-        color: "all",
         price: maxPrice,
       },
     }));

@@ -1,4 +1,4 @@
-import { Products, SingleProduct, Image, Color } from "../types";
+import { Products, SingleProduct, Image } from "../types";
 
 /**
  * Subset of the dummyjson.com `/products` response shape that the app
@@ -35,16 +35,14 @@ export interface DummyProductsResponse {
 // 100 to render it as euros.
 const CENTS_MULTIPLIER = 100;
 
-// Palette used for the color filter fallback. Products without a real
-// color option still get one swatch so the picker stays useful.
-const FALLBACK_PALETTE = ["#ff0000", "#ffb900", "#000", "#0000ff", "#00ff00"];
-
-function deriveColors(d: DummyProduct): Color[] {
-  const safeId = typeof d.id === "number" ? d.id : 0;
-  const idx = safeId % FALLBACK_PALETTE.length;
-  // Cast is safe — every entry is a valid Color enum literal (hex string).
-  return [FALLBACK_PALETTE[idx] as Color];
-}
+// dummyjson products expose no color field. The legacy
+// `deriveColors` helper faked 5 colours by hashing the product id,
+// which produced arbitrary, non-representative swatches and an
+// unusable Color sidebar filter. We removed the Color filter
+// entirely; products now have an empty `colors` array so any stale
+// consumer that still reads the field gets a benign [] instead of
+// a misleading id-derived palette.
+const NO_COLORS: never[] = [];
 
 function deriveShipping(d: DummyProduct): boolean {
   // Treat the product as shipping-eligible as long as it's not flagged as
@@ -109,7 +107,7 @@ export function mapDummyProductToProduct(d: DummyProduct): Products {
     name: d.title,
     price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
     image: deriveFirstImage(d),
-    colors: deriveColors(d),
+    colors: NO_COLORS,
     // Brand fallback: empty string (matches `mapDummyProductToSingleProduct`
     // and lets Filter.tsx's brandOptions pipeline skip unknown-brand
     // rows via its `.filter((brand) => brand.length > 0)` step). The
@@ -140,7 +138,7 @@ export function mapDummyProductToSingleProduct(
     stock: d.stock ?? 0,
     price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
     shipping: deriveShipping(d),
-    colors: deriveColors(d),
+    colors: NO_COLORS,
     category: d.category ?? "uncategorised",
     images: buildImageArray(imageList, productId),
     reviews:
