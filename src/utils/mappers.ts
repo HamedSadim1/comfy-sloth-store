@@ -35,15 +35,6 @@ export interface DummyProductsResponse {
 // 100 to render it as euros.
 const CENTS_MULTIPLIER = 100;
 
-// dummyjson products expose no color field. The legacy
-// `deriveColors` helper faked 5 colours by hashing the product id,
-// which produced arbitrary, non-representative swatches and an
-// unusable Color sidebar filter. We removed the Color filter
-// entirely; products now have an empty `colors` array so any stale
-// consumer that still reads the field gets a benign [] instead of
-// a misleading id-derived palette.
-const NO_COLORS: never[] = [];
-
 function deriveShipping(d: DummyProduct): boolean {
   // Treat the product as shipping-eligible as long as it's not flagged as
   // out of stock. Free-shipping logic in the codebase uses boolean `shipping`.
@@ -107,7 +98,6 @@ export function mapDummyProductToProduct(d: DummyProduct): Products {
     name: d.title,
     price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
     image: deriveFirstImage(d),
-    colors: NO_COLORS,
     // Brand fallback: empty string (matches `mapDummyProductToSingleProduct`
     // and lets Filter.tsx's brandOptions pipeline skip unknown-brand
     // rows via its `.filter((brand) => brand.length > 0)` step). The
@@ -138,7 +128,6 @@ export function mapDummyProductToSingleProduct(
     stock: d.stock ?? 0,
     price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
     shipping: deriveShipping(d),
-    colors: NO_COLORS,
     category: d.category ?? "uncategorised",
     images: buildImageArray(imageList, productId),
     reviews:
@@ -148,7 +137,6 @@ export function mapDummyProductToSingleProduct(
     description: d.description ?? "",
     company: (d.brand ?? "").toLowerCase(),
     amount: 1,
-    color: "",
   };
 }
 
