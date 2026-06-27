@@ -34,6 +34,12 @@ const ProductList: React.FC = () => {
 
   // Server-paginated fetch with React Query. `data` is
   // `InfiniteData<ProductsPage> | undefined`, ordered by `pageParams`.
+  // We pass the active `category` so React Query treats each category as a
+  // fresh query (different queryKey) and `useComfys` swaps the URL from
+  // `/products` to `/products/category/{slug}` server-side — without this
+  // every click on a category would re-filter the same already-loaded
+  // products, leaving empty grids whenever the picked category wasn't
+  // represented in the first 10 cached results.
   const {
     data,
     error,
@@ -41,7 +47,8 @@ const ProductList: React.FC = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useComfys();
+    isPlaceholderData,
+  } = useComfys({ category });
 
   // Accumulates Products[] across every page loaded so far. Re-derived
   // only when the query result identity changes (which it does on each
@@ -126,6 +133,11 @@ const ProductList: React.FC = () => {
         if (!first?.isIntersecting) return;
         if (!userScrolledRef.current) return;
         if (isFetchingNextPage) return;
+        // While `keepPreviousData` is serving the previous category's
+        // pages during a category transition, fetching more would append
+        // to the stale pagination buffer — the user-visible data is the
+        // old category, the new fetch will replace it shortly. Skip.
+        if (isPlaceholderData) return;
         void fetchNextPage();
       },
       { rootMargin: "0px 0px 240px 0px" }
@@ -135,15 +147,16 @@ const ProductList: React.FC = () => {
       window.removeEventListener("scroll", markScrolled);
       observer.disconnect();
     };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
 
   // Manual "Load more" fallback. Bypasses the IO gate (and ignores any
   // pending scroll) so keyboard users and IO-unavailable environments
-  // can still request the next page.
+  // can still request the next page. Same placeholderData guard as the
+  // sentinel above to avoid appending to a soon-to-be-replaced buffer.
   const handleLoadMore = useCallback(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    if (!hasNextPage || isFetchingNextPage || isPlaceholderData) return;
     void fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
 
   // Error state — surface the api message directly.
   if (error) {
