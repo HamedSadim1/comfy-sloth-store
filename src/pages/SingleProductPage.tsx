@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
@@ -9,6 +10,7 @@ import {
   SingleProductSkeleton,
 } from "../components";
 import useComfy from "../hooks/useComfy";
+import { useSingleProductStore } from "../SingleProductStore";
 import { FiTruck, FiRefreshCw, FiShield } from "react-icons/fi";
 
 // Sub-component: meta pill with label + value
@@ -56,6 +58,32 @@ const SingleProductPage = () => {
   const { id } = useParams<{ id: string }>();
 
   const { data, error, isLoading } = useComfy(id!);
+
+  // Sync the loaded product into the Zustand `useSingleProductStore` so
+  // AddToCart can read the running stock / price / id. Without this the
+  // store's `stock` stays at its initial `0`, which causes
+  // `increaseAmount`'s `Math.min(state.amount + 1, state.stock)` to clamp
+  // to `0` — making the +/- buttons silently a no-op (or, when starting
+  // from `amount=1`, visibly decrement the displayed quantity).
+  //
+  // The cleanup runs on data change AND on unmount so the next product
+  // (whether navigated to or the user leaving the route) starts from
+  // `amount=1` / a clean color selection.
+  const setProduct = useSingleProductStore((state) => state.setProduct);
+  const resetSingleProduct = useSingleProductStore((state) => state.reset);
+  useEffect(() => {
+    if (!data) return;
+    setProduct({
+      id: data.id,
+      name: data.name,
+      price: data.price,
+      stock: data.stock,
+      image: data.images?.[0]?.url ?? "",
+    });
+    return () => {
+      resetSingleProduct();
+    };
+  }, [data, setProduct, resetSingleProduct]);
 
   if (isLoading) {
     return <SingleProductSkeleton />;
