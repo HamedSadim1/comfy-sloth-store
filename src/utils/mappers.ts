@@ -110,7 +110,12 @@ export function mapDummyProductToProduct(d: DummyProduct): Products {
     price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
     image: deriveFirstImage(d),
     colors: deriveColors(d),
-    company: (d.brand ?? "unknown").toLowerCase(),
+    // Brand fallback: empty string (matches `mapDummyProductToSingleProduct`
+    // and lets Filter.tsx's brandOptions pipeline skip unknown-brand
+    // rows via its `.filter((brand) => brand.length > 0)` step). The
+    // previous `?? "unknown"` literal leaked through that filter and
+    // surfaced as a literal "unknown" option in the brand dropdown.
+    company: (d.brand ?? "").toLowerCase(),
     description: d.description ?? "",
     category: d.category ?? "uncategorised",
     shipping: deriveShipping(d),
