@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { useFilterContext } from "../Context/FilterContext";
 import { BsFillGridFill, BsList } from "react-icons/bs";
 import styled from "styled-components";
 import { useStore } from "../store";
@@ -62,14 +61,22 @@ const SortSelect: React.FC<SortSelectProps> = ({ sort, onSortChange }) => (
   </div>
 );
 
-// Main functional component for sorting and view controls
+// Main functional component for sorting and view controls.
+//
+// `sort` and `setSort` were previously read from the legacy FilterContext,
+// but FilterContext has been deleted in favour of Zustand-only state. We
+// still keep `gridView` / `setGridView` / `numberOfProducts` in Zustand
+// (same store) and only this `sort` field needs the onChange wrapper
+// because Zustand's `setSort` takes a `string` directly while the
+// underlying <select> emits a `ChangeEvent<HTMLSelectElement>`.
 const Sort: React.FC = () => {
-  const { sort, updateSort } = useFilterContext();
   const setGridView = useStore((state) => state.setGridView);
   const gridView = useStore((state) => state.comfyStoreQuery.gridView);
   const numberOfProducts = useStore(
     (state) => state.comfyStoreQuery.numberOfProducts
   );
+  const sort = useStore((state) => state.comfyStoreQuery.sort);
+  const setSort = useStore((state) => state.setSort);
 
   // Handler for view toggle
   const handleToggleView = useCallback(
@@ -77,6 +84,12 @@ const Sort: React.FC = () => {
       setGridView(isGrid);
     },
     [setGridView]
+  );
+
+  // Adapter from the <select>'s ChangeEvent to the store's setSort(string).
+  const handleSortChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => setSort(e.target.value),
+    [setSort]
   );
 
   return (
@@ -88,7 +101,7 @@ const Sort: React.FC = () => {
           {numberOfProducts === 1 ? "product" : "products"}
         </span>
       </div>
-      <SortSelect sort={sort} onSortChange={updateSort} />
+      <SortSelect sort={sort} onSortChange={handleSortChange} />
     </Wrapper>
   );
 };

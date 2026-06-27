@@ -62,6 +62,15 @@ export const products_url: string = "/products?limit=100";
 export const single_product_url: string = "/products/";
 
 /**
+ * Endpoint that returns the full list of categories from the dummyjson
+ * catalog (24 entries, each `{ slug, name, url }`). Used by the Filter
+ * sidebar so every category is discoverable from the first paint — not
+ * just the categories that happen to live in the currently-loaded product
+ * pages of the infinite-scrolled products query.
+ */
+export const category_list_url: string = "/products/category-list";
+
+/**
  * Application constants object for easy access and potential future expansion.
  */
 export const constants = {
@@ -70,5 +79,6 @@ export const constants = {
   urls: {
     products: products_url,
     singleProduct: single_product_url,
+    categoryList: category_list_url,
   },
 } as const;

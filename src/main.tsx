@@ -4,7 +4,6 @@ import App from "./App.tsx";
 import { ProductProvider } from "./Context/ProductContext.tsx";
 import { CartProvider } from "./Context/CartContext.tsx";
 import { UserProvider } from "./Context/UserContext.tsx";
-import { FilterProvider } from "./Context/FilterContext.tsx";
 import { Auth0Provider } from "@auth0/auth0-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -55,14 +54,11 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <UserProvider>
           {/* Product context provider for product data */}
           <ProductProvider>
-            {/* Filter context provider for product filtering */}
-            <FilterProvider>
-              {/* Cart context provider for shopping cart */}
-              <CartProvider>
-                {/* Main App component */}
-                <App />
-              </CartProvider>
-            </FilterProvider>
+            {/* Cart context provider for shopping cart */}
+            <CartProvider>
+              {/* Main App component */}
+              <App />
+            </CartProvider>
           </ProductProvider>
         </UserProvider>
       </QueryClientProvider>

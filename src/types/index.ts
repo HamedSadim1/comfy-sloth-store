@@ -114,6 +114,21 @@ export interface AddToCart {
   image: string;
 }
 
+// Catalog Types
+/**
+ * Represents a category entry from the dummyjson `/products/category-list`
+ * endpoint. The `slug` is the canonical filter value (matches what the
+ * Zustand `useStore.category` field tracks and what the products'
+ * `category` string contains); `name` is the human-friendly display label
+ * used in the filter UI; `url` is the upstream dummyjson route, kept for
+ * future deep-linking.
+ */
+export interface Category {
+  slug: string;
+  name: string;
+  url: string;
+}
+
 // Enums
 /**
  * Enum for product colors.

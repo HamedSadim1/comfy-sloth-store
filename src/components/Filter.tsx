@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
 import { FaSearch } from "react-icons/fa";
@@ -6,7 +12,9 @@ import { FiX } from "react-icons/fi";
 import { colors } from "../data";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
-import { Products } from "../types";
+import useCategoryList from "../hooks/useCategoryList";
+import { Products, Category } from "../types";
+import { shimmerFill } from "../styles/shimmer";
 import Button from "./Button";
 import ColorSwatch from "./ColorSwatch";
 
@@ -20,10 +28,22 @@ interface FilterGroupProps {
   children: React.ReactNode;
 }
 
+// How many chips to show before the "Show all N more" pill kicks in.
+// Picked to fit comfortably in the 240–260px sidebar without scrolling.
+const INITIAL_VISIBLE = 10;
+
 interface CategoryFilterProps {
-  categories: string[];
+  /** Categories to render (either the API list or a products-derived fallback). */
+  categories: Category[];
+  /** True while the dedicated category-list query is pending AND we have
+   *  no fallback yet — the chip group renders shimmer placeholders. */
+  isLoading: boolean;
+  /** True when the dedicated query failed AND we still have a usable
+   *  (products-derived) fallback list — renders a small note above
+   *  the chip group so users know the list isn't the full catalogue. */
+  hasFallbackWarning: boolean;
   selectedCategory: string;
-  onCategoryChange: (category: string) => void;
+  onCategoryChange: (slug: string) => void;
 }
 
 interface CompanyFilterProps {
@@ -95,32 +115,85 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
   );
 };
 
-// Sub-component for category filter
+// Sub-component for category filter.
+//
+// Reads the full /products/category-list when available (via useCategoryList
+// in the parent) so the chip group shows every category from the first
+// paint. Falls back to a products-derived list with a small warning note
+// if the API call fails. Renders the first `INITIAL_VISIBLE` categories
+// plus a "+N more" pill that the user clicks to expand the rest.
 const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categories,
+  isLoading,
+  hasFallbackWarning,
   selectedCategory,
   onCategoryChange,
-}) => (
-  <FilterGroup title="Category">
-    <div className="chip-list">
-      {categories.map((categoryItem) => {
-        const isActive =
-          categoryItem.toLowerCase() === selectedCategory.toLowerCase();
-        return (
+}) => {
+  const [expanded, setExpanded] = useState<boolean>(false);
+
+  const visibleCategories = expanded
+    ? categories
+    : categories.slice(0, INITIAL_VISIBLE);
+  const hiddenCount = categories.length - visibleCategories.length;
+
+  return (
+    <FilterGroup title="Category">
+      {hasFallbackWarning && (
+        <p className="fallback-note">
+          Couldn&rsquo;t load the full category list &mdash; showing what&rsquo;s
+          currently visible in the catalogue.
+        </p>
+      )}
+      <div className="chip-list">
+        {/* "all" pseudo-category always first — independent of API. */}
+        <button
+          key="__all__"
+          type="button"
+          name="category"
+          className={selectedCategory === "all" ? "chip active" : "chip"}
+          onClick={() => onCategoryChange("all")}
+        >
+          all
+        </button>
+        {isLoading
+          ? Array.from({ length: INITIAL_VISIBLE }).map((_, i) => (
+              <span
+                key={`__skeleton__${i}`}
+                className="chip chip-skeleton"
+                aria-hidden="true"
+              />
+            ))
+          : null}
+        {!isLoading &&
+          visibleCategories.map((categoryItem) => {
+            const isActive = selectedCategory === categoryItem.slug;
+            return (
+              <button
+                key={categoryItem.slug}
+                type="button"
+                name="category"
+                className={isActive ? "chip active" : "chip"}
+                onClick={() => onCategoryChange(categoryItem.slug)}
+                aria-label={`Filter by category ${categoryItem.name}`}
+              >
+                {categoryItem.name}
+              </button>
+            );
+          })}
+        {!isLoading && hiddenCount > 0 && !expanded && (
           <button
-            key={categoryItem}
             type="button"
-            name="category"
-            className={isActive ? "chip active" : "chip"}
-            onClick={() => onCategoryChange(categoryItem.toLowerCase())}
+            className="chip show-all-pill"
+            onClick={() => setExpanded(true)}
+            aria-label={`Show ${hiddenCount} more categories`}
           >
-            {categoryItem}
+            +{hiddenCount} more
           </button>
-        );
-      })}
-    </div>
-  </FilterGroup>
-);
+        )}
+      </div>
+    </FilterGroup>
+  );
+};
 
 // Sub-component for company filter
 const CompanyFilter: React.FC<CompanyFilterProps> = ({
@@ -266,6 +339,7 @@ const Filter: React.FC = () => {
   const getMinPrice = useStore((state) => state.getMinPrice);
   const price = useStore((state) => state.comfyStoreQuery.price);
   const updatePrice = useStore((state) => state.updatePrice);
+  const setMaxPrice = useStore((state) => state.setMaxPrice);
 
   // Fetch products data
   const { data } = useComfys();
@@ -291,21 +365,43 @@ const Filter: React.FC = () => {
     return ["all", ...Array.from(new Set(known)).sort()];
   }, [products]);
 
-  // Derive the category chip list from the loaded product set.
-  const categoryOptions = useMemo(() => {
+  // Pull the full dummyjson category list so every category is visible from
+  // the first paint — not only those present in the currently-loaded pages
+  // of `useComfys`. If the API call fails, fall back to a list aggregated
+  // from the products we already have in memory (with a small warning note
+  // rendered inside the CategoryFilter).
+  const {
+    data: categoryList,
+    isLoading: categoryListLoading,
+    isError: categoryListError,
+  } = useCategoryList();
+
+  const fallbackCategories: Category[] = useMemo(() => {
     const known = products
       .map((p) => p.category)
       .filter(
         (cat): cat is string =>
           typeof cat === "string" && cat.length > 0 && cat !== "uncategorised"
       );
-    return ["all", ...Array.from(new Set(known)).sort()];
+    return Array.from(new Set(known))
+      .sort()
+      .map((slug) => ({ slug, name: slug, url: "" }));
   }, [products]);
 
-  // Initialize price to max on mount
+  const categoryItems: Category[] =
+    categoryList && categoryList.length > 0 ? categoryList : fallbackCategories;
+  const isCategoryLoading =
+    categoryListLoading && categoryItems.length === 0;
+  const showFallbackWarning =
+    categoryListError && categoryItems.length > 0;
+
+  // Initialize price to max on mount, AND mirror maxPrice into the store so
+  // PageHero (which doesn't see the products list) can call `clearFilter`
+  // without us having to plumb the value through.
   useEffect(() => {
     updatePrice(maxPrice);
-  }, [updatePrice, maxPrice]);
+    setMaxPrice(maxPrice);
+  }, [updatePrice, setMaxPrice, maxPrice]);
 
   // Handlers with useCallback for performance
   const handleSearch = useCallback(
@@ -353,7 +449,9 @@ const Filter: React.FC = () => {
         <SearchForm onSearch={handleSearch} />
         <hr className="divider" />
         <CategoryFilter
-          categories={categoryOptions}
+          categories={categoryItems}
+          isLoading={isCategoryLoading}
+          hasFallbackWarning={showFallbackWarning}
           selectedCategory={category}
           onCategoryChange={handleCategoryChange}
         />
@@ -505,6 +603,44 @@ const Wrapper = styled.aside`
         outline-offset: 2px;
       }
     }
+
+    /* Skeleton placeholder shown while the /products/category-list
+       query is pending — same DOM shape as a chip so the layout
+       doesn't shift when the real chips arrive. */
+    .chip-skeleton {
+      ${shimmerFill}
+      width: 5rem;
+      border-color: transparent;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* "+N more" pill under the visible chips — sticky-styled visually
+       via a soft fill so it reads as a different affordance. */
+    .show-all-pill {
+      background: var(--clr-primary-10);
+      border-color: transparent;
+      color: var(--clr-primary-2);
+      font-weight: 700;
+
+      &:hover,
+      &:focus-visible {
+        background: var(--clr-primary-9);
+        color: var(--clr-primary-1);
+        border-color: transparent;
+        transform: none;
+      }
+    }
+  }
+
+  /* Small note rendered above the chip group when we're rendering the
+     products-derived fallback because the API call failed. */
+  .fallback-note {
+    font-size: 0.72rem;
+    color: var(--clr-grey-6);
+    margin: 0 0 0.55rem;
+    letter-spacing: 0;
+    font-style: italic;
   }
 
   .select-wrap {

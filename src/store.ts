@@ -10,6 +10,14 @@ interface ComfyStoreQuery {
   category: string;
   company: string;
   color: string;
+  /** Sort key for the ProductList. Previously lived in FilterContext; moved
+   *  here so the Sort component (and any future consumer) can read/write it
+   *  without dragging in the legacy context. */
+  sort: string;
+  /** Running max of the loaded products — kept in state so consumers like
+   *  PageHero (which can't see the products list) can call `clearFilter`
+   *  without passing the value manually. Set by Filter after each product
+   *  load. */
   maxPrice: number;
   minPrice: number;
   price: number;
@@ -25,6 +33,11 @@ interface ComfyStore {
   updateCategory: (category: string) => void;
   updateCompany: (company: string) => void;
   updateColor: (color: string) => void;
+  /** Update the sort key (consumed by Sort/ProductList). */
+  setSort: (sort: string) => void;
+  /** Track the running max price so PageHero can reset filters without a
+   *  maxPrice argument. */
+  setMaxPrice: (maxPrice: number) => void;
   getMaxPrice: (products: Products[]) => number;
   getMinPrice: (products: Products[]) => number;
   updatePrice: (price: number) => void;
@@ -47,6 +60,7 @@ export const useStore = create<ComfyStore>((set) => ({
     category: "all",
     company: "all",
     color: "all",
+    sort: "price-lowest",
     price: 0,
   },
 
@@ -102,6 +116,22 @@ export const useStore = create<ComfyStore>((set) => ({
   updateColor: (color: string) => {
     set((state) => ({
       comfyStoreQuery: { ...state.comfyStoreQuery, color },
+    }));
+  },
+
+  // Update sort key
+  setSort: (sort: string) => {
+    set((state) => ({
+      comfyStoreQuery: { ...state.comfyStoreQuery, sort },
+    }));
+  },
+
+  // Track running max price of the loaded catalogue so consumers that
+  // don't see the products list (e.g. PageHero) can reset filters
+  // without having to pass a maxPrice argument around.
+  setMaxPrice: (maxPrice: number) => {
+    set((state) => ({
+      comfyStoreQuery: { ...state.comfyStoreQuery, maxPrice },
     }));
   },
 
