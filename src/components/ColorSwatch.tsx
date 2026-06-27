@@ -114,7 +114,6 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
     if (!ariaLabel) {
       // Make interaction impossible to misuse silently; the callsite
       // (AddToCart / Filter) is the authoritative source for the label.
-      // eslint-disable-next-line no-console
       console.warn(
         "ColorSwatch: interactive variant expects an `ariaLabel` prop for screen readers."
       );
