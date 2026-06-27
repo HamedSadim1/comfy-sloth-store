@@ -52,3 +52,31 @@ export const pluralize = (
   singular: string,
   plural: string = `${singular}s`
 ): string => `${n} ${n === 1 ? singular : plural}`;
+
+/**
+ * Sentinel value used in the Brand (`company`) filter dropdown to
+ * represent products whose `brand` field was missing on the upstream
+ * dummyjson API. The product-side mapper stamps those rows with an
+ * empty `company` string (so the data layer stays truthful); the
+ * filter sidebar surfaces them as a clearly-labelled `'No brand'`
+ * option instead of the previous literal `'unknown'` that leaked
+ * through the brandOptions pipeline.
+ *
+ * Pipeline contract (single source of truth across all consumers):
+ *
+ *   Filter.tsx          → injects this value into `brandOptions`
+ *                         when at least one loaded product has an
+ *                         empty `company`. The CompanyFilter JSX
+ *                         rewrites the option's label to 'No brand'
+ *                         on display, so users never see the raw
+ *                         sentinel.
+ *   useFilterProducts   → treats this value as a wildcard that
+ *                         matches products where `company === ''`.
+ *   ProductList / etc.  → never reads this value directly; they only
+ *                         consume the filtered Products[].
+ *
+ * Keeping the sentinel in `helper.ts` means every consumer agrees on
+ * the same boundary, so future contributors adding a new filter
+ * consumer don't accidentally diverge.
+ */
+export const NO_BRAND_FILTER = "__no_brand__";

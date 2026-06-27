@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import styled from "styled-components";
-import { formatPrice } from "../utils/helper";
+import { formatPrice, NO_BRAND_FILTER } from "../utils/helper";
 import { FaSearch } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
 import { colors } from "../data";
@@ -195,7 +195,12 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   );
 };
 
-// Sub-component for company filter
+// Sub-component for company filter.
+//
+// Translates the `NO_BRAND_FILTER` sentinel into a human-readable
+// `'No brand'` label at the boundary so users never see the raw
+// magic string in the dropdown. The sentinel itself is still the
+// underlying value so useFilterProducts.ts can match it cleanly.
 const CompanyFilter: React.FC<CompanyFilterProps> = ({
   companies,
   selectedCompany,
@@ -212,7 +217,7 @@ const CompanyFilter: React.FC<CompanyFilterProps> = ({
       >
         {companies.map((company) => (
           <option key={company} value={company}>
-            {company}
+            {company === NO_BRAND_FILTER ? "No brand" : company}
           </option>
         ))}
       </select>
@@ -370,11 +375,26 @@ const Filter: React.FC = () => {
   const minPrice = getMinPrice(products);
 
   // Derive the brand <select> options from the loaded product set.
+  //
+  // Always prepended with `'all'`, followed by the unique, sorted list
+  // of populated brand strings. If at least one loaded product has
+  // an empty `company` (no brand on the upstream API), we also
+  // surface a clearly-labelled `'No brand'` filter option (rendered
+  // by CompanyFilter as the user-facing label for the
+  // `NO_BRAND_FILTER` sentinel) so users can still narrow down to
+  // those rows. Without this, low-brand categories (e.g. groceries,
+  // which dummyjson ships with ~no brand fields) would degenerate
+  // the dropdown to just `'all'`, leaving users feeling like the
+  // filter is broken or missing.
   const brandOptions = useMemo(() => {
     const known = products
       .map((p) => p.company)
       .filter((brand): brand is string => brand.length > 0);
-    return ["all", ...Array.from(new Set(known)).sort()];
+    const unique = Array.from(new Set(known)).sort();
+    const hasNoBrand = products.some((p) => !p.company);
+    return hasNoBrand
+      ? ["all", NO_BRAND_FILTER, ...unique]
+      : ["all", ...unique];
   }, [products]);
 
   // Pull the full dummyjson category list so every category is visible from

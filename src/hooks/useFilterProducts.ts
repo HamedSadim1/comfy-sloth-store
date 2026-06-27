@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Color, Products } from "../types";
+import { NO_BRAND_FILTER } from "../utils/helper";
 
 // Interface for the hook parameters
 interface UseFilterProductsParams {
@@ -59,7 +60,17 @@ const useFilterProducts = ({
         // Filter by company (mapper lowercases the brand at the source,
         // and the dropdown stores the raw lowercase value, so the compare
         // keys already line up).
+        //
+        // The `NO_BRAND_FILTER` sentinel (single source of truth in
+        // helper.ts) is a wildcard that narrows the list to products
+        // whose `company` is empty — i.e. the API's `brand` field was
+        // missing on the upstream dummyjson request. Without this
+        // branch, picking `'No brand'` in the dropdown would silently
+        // drop every product rather than returning the no-brand
+        // subset. Surface these rows only when the user explicitly
+        // picks the sentinel; do NOT include them under `'all'`.
         if (company === "all") return true;
+        if (company === NO_BRAND_FILTER) return !product.company;
         return product.company === company;
       })
       .filter((product) => {
