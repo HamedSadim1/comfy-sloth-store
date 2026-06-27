@@ -18,15 +18,6 @@ export class APIError extends Error {
 }
 
 /**
- * Generic API response type.
- */
-export interface APIResponse<T> {
-  data: T;
-  success: boolean;
-  message?: string;
-}
-
-/**
  * Wrapper shape returned by dummyjson.com for any list endpoint
  * (`/products`, `/products/category/:slug`, `/products/search`).
  */

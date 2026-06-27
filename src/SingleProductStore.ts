@@ -1,21 +1,5 @@
 import { create } from "zustand";
 
-// Interface for cart item details
-//
-// No `color` field: dummyjson products expose no colour per item,
-// and the previous SingleProduct selector carried a placeholder
-// `""` value that AddToCart had to thread through the cart payload.
-// Dropping the field both removes the dead state and lets the
-// addToCart signature slim down to (product, amount, image).
-export interface CartDetail {
-  id: string;
-  stock: number;
-  price: number;
-  name: string;
-  amount: number;
-  image: string;
-}
-
 // Interface for single product state
 interface SingleProductState {
   id: string;
