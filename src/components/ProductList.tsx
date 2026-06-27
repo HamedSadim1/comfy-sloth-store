@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
+import { pluralize } from "../utils/helper";
 import ListView from "./ListView";
 import GridView from "./GridView";
 import useFilterProducts from "../hooks/useFilterProducts";
@@ -195,16 +196,14 @@ const ProductList: React.FC = () => {
             {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
           <p className="hint" aria-live="polite">
-            Showing {loaded} of {total}{" "}
-            {total === 1 ? "product" : "products"} loaded
+            Showing {loaded} of {total}{" "}{pluralize(total, "product").replace(/^\d+\s/, "")} loaded
           </p>
         </LoadMoreArea>
       ) : (
         <EndNote aria-label="Pagination">
           <span className="dot" aria-hidden="true" />
           <span>
-            You&rsquo;ve seen all {loaded}{" "}
-            {loaded === 1 ? "product" : "products"}
+            You&rsquo;ve seen all {pluralize(loaded, "product")}
           </span>
         </EndNote>
       )}

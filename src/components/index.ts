@@ -24,6 +24,7 @@ import TrustStrip from "./TrustStrip";
 import Button from "./Button";
 import Eyebrow from "./Eyebrow";
 import ColorSwatch from "./ColorSwatch";
+import OrderSummary from "./OrderSummary";
 
 export {
   FeaturedProducts,
@@ -52,4 +53,5 @@ export {
   Button,
   Eyebrow,
   ColorSwatch,
+  OrderSummary,
 };

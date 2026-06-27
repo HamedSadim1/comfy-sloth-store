@@ -4,10 +4,9 @@ import styled from "styled-components";
 import { HiArrowRight, HiArrowLeft } from "react-icons/hi";
 import { FaShoppingCart } from "react-icons/fa";
 import { FiLock } from "react-icons/fi";
-import { StripeCheckout } from "../components";
+import { StripeCheckout, OrderSummary, Eyebrow } from "../components";
 import { useCartContext } from "../Context/CartContext";
-import { formatPrice, qualifiesForFreeShipping } from "../utils/helper";
-import Eyebrow from "../components/Eyebrow";
+import { formatPrice, pluralize } from "../utils/helper";
 import { gradientText } from "../styles/gradientText";
 
 // Single step in the three-step breadcrumb progress trail.
@@ -43,8 +42,7 @@ const CheckoutHero: React.FC = () => {
           Almost done<span className="accent">.</span>
         </h1>
         <p className="lede">
-          <strong>{totalItems}</strong>{" "}
-          {totalItems === 1 ? "item" : "items"} &middot; order total{" "}
+          <strong>{pluralize(totalItems, "item")}</strong> &middot; order total{" "}
           <strong>{formatPrice(grand)}</strong> &middot; encrypted by Stripe.
         </p>
       </div>
@@ -52,54 +50,16 @@ const CheckoutHero: React.FC = () => {
   );
 };
 
-// Order summary card used as the right column on the checkout page.
-const OrderSummary: React.FC = () => {
-  const { totalItems, totalAmount, shippingFee } = useCartContext();
-  const isFreeShipping = qualifiesForFreeShipping(totalAmount);
-  const shippingLabel = isFreeShipping ? "Free" : formatPrice(shippingFee);
-  const grand = isFreeShipping ? totalAmount : totalAmount + shippingFee;
-
-  return (
-    <SummaryCard aria-label="Order summary">
-      <header className="card-head">
-        <Eyebrow>Order summary</Eyebrow>
-        <h2 className="title">In your bag</h2>
-      </header>
-
-      <div className="lines">
-        <div className="line">
-          <span className="label">
-            Items · {totalItems} {totalItems === 1 ? "piece" : "pieces"}
-          </span>
-          <span className="value">{formatPrice(totalAmount)}</span>
-        </div>
-        <div className="line">
-          <span className="label">Shipping</span>
-          <span
-            className={`value ${isFreeShipping ? "value-free" : ""}`}
-          >
-            {shippingLabel}
-          </span>
-        </div>
-      </div>
-
-      <hr className="divider" />
-
-      <div className="grand-total">
-        <span className="label">Total</span>
-        <span className="figure">{formatPrice(grand)}</span>
-      </div>
-
-      <p className="secured">
-        <FiLock aria-hidden="true" />
-        Secured by Stripe · 256-bit encryption
-      </p>
-    </SummaryCard>
-  );
-};
+// Footer note rendered inside the OrderSummary's "secured" CSS slot.
+const SecuredNote: React.FC = () => (
+  <p className="secured">
+    <FiLock aria-hidden="true" />
+    Secured by Stripe · 256-bit encryption
+  </p>
+);
 
 const CheckoutPage: React.FC = () => {
-  const { cart } = useCartContext();
+  const { cart, totalItems, totalAmount, shippingFee } = useCartContext();
 
   return (
     <main>
@@ -136,7 +96,15 @@ const CheckoutPage: React.FC = () => {
                 <StripeCheckout />
               </div>
               <div className="summary-col">
-                <OrderSummary />
+                <OrderSummary
+                  totalAmount={totalAmount}
+                  totalItems={totalItems}
+                  shippingFee={shippingFee}
+                  itemNoun="piece"
+                  subtotalPrefix="Items"
+                  title="In your bag"
+                  footer={<SecuredNote />}
+                />
               </div>
             </div>
           )}
@@ -458,117 +426,6 @@ const Section = styled.section`
     .empty-card {
       padding: 4rem 2rem;
     }
-  }
-`;
-
-const SummaryCard = styled.section`
-  background: var(--clr-white);
-  border: 1px solid rgba(34, 34, 34, 0.06);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem 1.25rem;
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-
-  .card-head {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .title {
-    color: var(--clr-grey-1);
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.015em;
-    text-transform: none;
-    margin: 0;
-  }
-
-  .lines {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .line {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-  }
-
-  .line .label {
-    font-size: 0.85rem;
-    color: var(--clr-grey-5);
-    letter-spacing: 0;
-  }
-
-  .line .value {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--clr-grey-2);
-    letter-spacing: 0;
-  }
-
-  .value-free {
-    color: hsl(125, 50%, 30%);
-    font-weight: 700;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid rgba(34, 34, 34, 0.08);
-    margin: 0;
-  }
-
-  .grand-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-  }
-
-  .grand-total .label {
-    font-size: 0.85rem;
-    color: var(--clr-grey-3);
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    font-weight: 700;
-  }
-
-  .grand-total .figure {
-    ${gradientText}
-    font-size: clamp(1.5rem, 2.2vw + 0.5rem, 1.85rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-
-  .secured {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    color: var(--clr-grey-5);
-    font-size: 0.75rem;
-    margin: 0;
-    text-align: center;
-
-    svg {
-      width: 0.95rem;
-      height: 0.95rem;
-      color: var(--clr-primary-2);
-    }
-  }
-
-  @media (min-width: 992px) {
-    align-self: start;
-    position: sticky;
-    top: 6.5rem;
-
-    padding: 1.85rem 1.75rem;
   }
 `;
 
