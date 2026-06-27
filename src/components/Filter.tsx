@@ -1,6 +1,6 @@
 import React, {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -330,6 +330,7 @@ const Filter: React.FC = () => {
   const setFreeShipping = useStore((state) => state.setShowAllFreeShipping);
   const updateCategory = useStore((state) => state.updateCategory);
   const category = useStore((state) => state.comfyStoreQuery.category);
+  const sort = useStore((state) => state.comfyStoreQuery.sort);
   const company = useStore((state) => state.comfyStoreQuery.company);
   const updateCompany = useStore((state) => state.updateCompany);
   const color = useStore((state) => state.comfyStoreQuery.color);
@@ -341,8 +342,19 @@ const Filter: React.FC = () => {
   const updatePrice = useStore((state) => state.updatePrice);
   const setMaxPrice = useStore((state) => state.setMaxPrice);
 
-  // Fetch products data
-  const { data } = useComfys();
+  // Fetch products data FOR THE CURRENT FILTER SET — threading
+  // `{category, sort}` here makes this hook's queryKey identical to
+  // `ProductList.tsx`'s. Without this, this component would default to
+  // category="all" + no sort and pull the catalogue's first 10 cheap
+  // items (Beauty/skincare-ish under dummyjson's native ordering).
+  // They are then used to derive `maxPrice`, `brandOptions`, and the
+  // `fallbackCategories` list, which would NOT match the prices of
+  // the actually-rendered category's items. The price auto-fill would
+  // silently narrow the grid when the user picked a category whose
+  // products sit above the cheap-defaults' max. Passing the active
+  // filter set keeps both components on the same React Query cache
+  // entry and the derived UI values consistent with what's rendered.
+  const { data } = useComfys({ category, sort });
 
   // `data` from `useComfys` is `InfiniteData<ProductsPage>`; flatMap across
   // pages to derive the accumulated Products[]. Memoise the fallback so it
@@ -398,7 +410,17 @@ const Filter: React.FC = () => {
   // Initialize price to max on mount, AND mirror maxPrice into the store so
   // PageHero (which doesn't see the products list) can call `clearFilter`
   // without us having to plumb the value through.
-  useEffect(() => {
+  //
+  // useLayoutEffect (not useEffect) so this write commits BEFORE the
+  // browser paints. Otherwise we'd hit a transient race on first paint
+  // and on every category change: this component commits with
+  // `maxPrice = 0` while data is loading, ProductList renders in the
+  // same cycle with `store.price = 0` → `filteredProducts = []` → empty
+  // grid + "No products match your filter" flash — even though the
+  // next microtask the store updates and the grid redresses. Lifting
+  // the write into useLayoutEffect means ProductList's first paint
+  // already has the correct store.price.
+  useLayoutEffect(() => {
     updatePrice(maxPrice);
     setMaxPrice(maxPrice);
   }, [updatePrice, setMaxPrice, maxPrice]);
