@@ -15,7 +15,7 @@ import {
   FaCcApplePay,
   FaCcStripe,
 } from "react-icons/fa";
-import { APP_NAME, newsletter_url } from "../utils/Contants";
+import { APP, NETWORK } from "../constants";
 
 // Reusable column heading
 const ColumnTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -26,8 +26,8 @@ const ColumnTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // blurb, social pills.
 const Brand: React.FC = () => (
   <div className="brand">
-    <Link to="/" className="logo-link" aria-label={`${APP_NAME} home`}>
-      <span className="wordmark">{APP_NAME.toLowerCase()}</span>
+    <Link to="/" className="logo-link" aria-label={`${APP.NAME} home`}>
+      <span className="wordmark">{APP.NAME.toLowerCase()}</span>
     </Link>
     <p>
       Handcrafted furniture for considered homes. Built slowly, sourced
@@ -120,7 +120,7 @@ const NewsletterColumn: React.FC = () => (
     <ColumnTitle>Stay in touch</ColumnTitle>
     <p>New drops and design inspiration, once a month. No spam.</p>
     <form
-      action={newsletter_url}
+      action={NETWORK.NEWSLETTER}
       method="POST"
       className="form"
     >
@@ -156,7 +156,7 @@ const Legal: React.FC = () => {
   return (
     <div className="legal">
       <p className="copy">
-        &copy; {year} <span>{APP_NAME}</span> &middot; All rights reserved
+        &copy; {year} <span>{APP.NAME}</span> &middot; All rights reserved
       </p>
       <ul className="payments" aria-label="Accepted payment methods">
         <li>

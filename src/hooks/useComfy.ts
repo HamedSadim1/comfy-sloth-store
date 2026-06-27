@@ -6,10 +6,11 @@ import type {
 import {
   mapDummyProductToSingleProduct,
 } from "../utils/mappers";
+import { NETWORK } from "../constants";
 
 // Create API client instance for the single product endpoint.
 // dummyjson returns the product object directly, so no unwrap needed.
-const apiClient = new APIClient<DummyProduct>("/products/");
+const apiClient = new APIClient<DummyProduct>(NETWORK.SINGLE_PRODUCT);
 
 /**
  * Custom hook to fetch a single product by ID using React Query.

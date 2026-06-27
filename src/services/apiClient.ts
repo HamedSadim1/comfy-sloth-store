@@ -1,5 +1,6 @@
 import type { AxiosInstance, AxiosRequestConfig} from "axios";
 import axios, { CanceledError } from "axios";
+import { NETWORK, STORAGE_KEYS } from "../constants";
 
 /**
  * Custom error class for API errors.
@@ -40,7 +41,7 @@ export interface DummyProductsResponse<T> {
  * Axios instance configured for dummyjson.com.
  */
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: "https://dummyjson.com",
+  baseURL: NETWORK.BASE_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -51,7 +52,7 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

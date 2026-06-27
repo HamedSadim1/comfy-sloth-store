@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { FiTruck, FiRefreshCw, FiShield, FiAward } from "react-icons/fi";
-import { APP_NAME } from "../utils/Contants";
+import { APP } from "../constants";
 
 // Each item has an icon, a short title, and a sub-line
 interface TrustItem {
@@ -39,7 +39,7 @@ const trustItems: TrustItem[] = [
 ];
 
 const TrustStrip: React.FC = () => (
-  <Wrapper aria-label={`Why shop with ${APP_NAME}`}>
+  <Wrapper aria-label={`Why shop with ${APP.NAME}`}>
     <div className="section-center grid">
       {trustItems.map(({ id, icon, title, description }) => (
         <article key={id} className="item">

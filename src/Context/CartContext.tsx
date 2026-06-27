@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import type { SingleProduct } from "../types";
+import { COMMERCE, STORAGE_KEYS } from "../constants";
 
 // Interface for the cart item with additional properties
 //
@@ -44,15 +45,15 @@ interface CartProviderProps {
   children: React.ReactNode;
 }
 
-// Shipping fee constant
-const SHIPPING_FEE = 534;
+// Shipping fee is now sourced from the centralised COMMERCE namespace so
+// the cart, checkout, and product trust-row copy stay in lockstep.
 
 // CartProvider component
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   // Function to get cart from localStorage, used as lazy initializer for useState
   const getLocalStorage = useCallback((): CartItem[] => {
     try {
-      const cart = localStorage.getItem("cart");
+      const cart = localStorage.getItem(STORAGE_KEYS.CART);
       return cart ? JSON.parse(cart) : [];
     } catch (error) {
       console.warn("Failed to parse cart from localStorage:", error);
@@ -64,7 +65,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>(getLocalStorage);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
-  const shippingFee = SHIPPING_FEE; // Constant shipping fee
+  const shippingFee = COMMERCE.SHIPPING_FEE_CENTS;
 
   // Function to add product to cart, memoized for performance
   const addToCart = useCallback(
@@ -133,7 +134,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     // Save cart to localStorage
     try {
-      localStorage.setItem("cart", JSON.stringify(cart));
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
     } catch (error) {
       console.warn("Failed to save cart to localStorage:", error);
     }

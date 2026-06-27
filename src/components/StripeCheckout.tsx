@@ -23,6 +23,7 @@ import { FaCheckCircle, FaCcVisa, FaCcMastercard, FaCcStripe } from "react-icons
 import type { User } from "@auth0/auth0-react";
 import Eyebrow from "./Eyebrow";
 import Button from "./Button";
+import { ENV } from "../constants";
 
 // Custom interface for CardElement options to avoid using 'any'
 interface CardStyleOptions {
@@ -33,7 +34,7 @@ interface CardStyleOptions {
 }
 
 // Load Stripe promise outside component to avoid re-initialization
-const promise = loadStripe(import.meta.env.VITE_REACT_APP_STRIP_PUBLIC_KEY);
+const promise = loadStripe(import.meta.env[ENV.STRIPE_PUBLIC_KEY] as string);
 
 // Interface for PaymentStatus component props
 interface PaymentStatusProps {

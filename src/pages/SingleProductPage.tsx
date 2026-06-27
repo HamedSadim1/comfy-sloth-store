@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
-import { APP_NAME } from "../utils/Contants";
+import { APP } from "../constants";
 import {
   ProductImages,
   AddToCart,
@@ -31,7 +31,7 @@ const MetaPill: React.FC<MetaPillProps> = ({ label, value, variant }) => (
 
 // Sub-component: compact trust row (no separate full section)
 const TrustRow: React.FC = () => (
-  <ul className="trust-row" aria-label={`Buying with ${APP_NAME}`}>
+  <ul className="trust-row" aria-label={`Buying with ${APP.NAME}`}>
     <li>
       <FiTruck aria-hidden="true" />
       <div>

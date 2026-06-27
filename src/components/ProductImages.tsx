@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import type { Image } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
+import { IMAGES } from "../constants";
 
 // Module-level canonical fallback used when a product doesn't ship an image.
 // Declared outside the component so the reference is stable across renders,
@@ -10,7 +11,7 @@ const fallbackImage: Image = {
   id: "no-image",
   width: 600,
   height: 600,
-  url: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+  url: IMAGES.PLACEHOLDER,
   filename: "no-image",
   size: 0,
   type: "image/svg+xml",

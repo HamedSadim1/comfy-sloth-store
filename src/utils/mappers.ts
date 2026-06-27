@@ -1,4 +1,5 @@
 import type { Products, SingleProduct, Image } from "../types";
+import { COMMERCE } from "../constants";
 
 /**
  * Subset of the dummyjson.com `/products` response shape that the app
@@ -32,8 +33,10 @@ export interface DummyProductsResponse {
 
 // Cents multiplier — dummyjson returns the price in dollars (e.g. 9.99)
 // while the codebase's `formatPrice` helper divides the stored price by
-// 100 to render it as euros.
-const CENTS_MULTIPLIER = 100;
+// 100 to render it as euros. The constant now lives in the centralised
+// COMMERCE namespace (see `src/constants.ts`); this file reads it from
+// there so the dummyjson↔cents conversion stays in lockstep with the
+// tax/shipping math in CartContext and the renders in CartTotals.
 
 function deriveShipping(d: DummyProduct): boolean {
   // Treat the product as shipping-eligible as long as it's not flagged as
@@ -96,7 +99,7 @@ export function mapDummyProductToProduct(d: DummyProduct): Products {
   return {
     id: String(d.id),
     name: d.title,
-    price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
+    price: Math.round((d.price ?? 0) * COMMERCE.CENTS_PER_DOLLAR),
     image: deriveFirstImage(d),
     // Brand fallback: empty string (matches `mapDummyProductToSingleProduct`
     // and lets Filter.tsx's brandOptions pipeline skip unknown-brand
@@ -126,7 +129,7 @@ export function mapDummyProductToSingleProduct(
   return {
     id: productId,
     stock: d.stock ?? 0,
-    price: Math.round((d.price ?? 0) * CENTS_MULTIPLIER),
+    price: Math.round((d.price ?? 0) * COMMERCE.CENTS_PER_DOLLAR),
     shipping: deriveShipping(d),
     category: d.category ?? "uncategorised",
     images: buildImageArray(imageList, productId),

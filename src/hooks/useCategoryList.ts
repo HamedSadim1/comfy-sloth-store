@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../services/apiClient";
 import type { Category } from "../types";
-import { category_list_url } from "../utils/Contants";
+import { NETWORK } from "../constants";
 import ms from "ms";
 
 /**
@@ -44,7 +44,7 @@ const useCategoryList = () => {
   return useQuery<Category[], Error>({
     queryKey: ["comfyStore", "categories"],
     queryFn: async (): Promise<Category[]> => {
-      const response = await axiosInstance.get<string[]>(category_list_url);
+      const response = await axiosInstance.get<string[]>(NETWORK.CATEGORY_LIST);
       const categories = response.data
         .filter((slug): slug is string => typeof slug === "string" && slug.length > 0)
         .map<Category>((slug) => ({

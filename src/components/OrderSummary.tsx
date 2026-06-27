@@ -6,8 +6,8 @@ import {
   qualifiesForFreeShipping,
   computeGrandTotal,
   pluralize,
-  FREE_SHIPPING_THRESHOLD_CENTS,
 } from "../utils/helper";
+import { COMMERCE } from "../constants";
 import Eyebrow from "./Eyebrow";
 import { gradientText } from "../styles/gradientText";
 
@@ -89,7 +89,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           <p className="free-hint">
             Add{" "}
             <strong>
-              {formatPrice(FREE_SHIPPING_THRESHOLD_CENTS - totalAmount)}
+              {formatPrice(COMMERCE.FREE_SHIPPING_THRESHOLD_CENTS - totalAmount)}
             </strong>{" "}
             more to unlock free shipping.
           </p>

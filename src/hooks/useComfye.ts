@@ -9,13 +9,8 @@ import APIClient, {
 } from "../services/apiClient";
 import type { Products } from "../types";
 import { mapDummyProductToProduct, type DummyProduct } from "../utils/mappers";
+import { NETWORK } from "../constants";
 import ms from "ms";
-
-// Page size: how many products dummyjson returns per request. Matches the
-// initial visible slot of the product list (10 cards). Subsequent pages
-// are pulled on demand via IntersectionObserver-driven `fetchNextPage()`
-// in `ProductList`.
-const PAGE_SIZE = 10;
 
 // API client + raw axios instance for dummyjson. The unfiltered endpoint
 // (`/products`) flows through APIClient; the per-category variant
@@ -23,7 +18,7 @@ const PAGE_SIZE = 10;
 // queryFn because dummyjson slugs are guaranteed `[a-z0-9-]` (no
 // encoding needed) and the explicit absolute path is easier to read than
 // re-using the class with a config.url override.
-const apiClient = new APIClient<DummyProduct>("/products");
+const apiClient = new APIClient<DummyProduct>(NETWORK.PRODUCTS);
 
 // Shape returned by each page-level queryFn call. Consumers either
 // treat the single page or flatMap across `data.pages` for the running
@@ -86,9 +81,9 @@ interface UseComfysFilters {
  * dummyjson catalogue. Three concerns are stitched via the queryFn:
  *
  *  - `category === "all"` (the default) →
- *    `/products?skip=N&limit=PAGE_SIZE[&sortBy=...&order=...]`
+ *    `/products?skip=N&limit=NETWORK.PAGE_SIZE[&sortBy=...&order=...]`
  *  - any other `category` slug →
- *    `/products/category/{slug}?skip=N&limit=PAGE_SIZE[&sortBy=...&order=...]`
+ *    `/products/category/{slug}?skip=N&limit=NETWORK.PAGE_SIZE[&sortBy=...&order=...]`
  *  - `sort` (when explicitly provided) → appended as `&sortBy=...&order=...`
  *    for both endpoints. Omitted entirely when the caller does not pass
  *    one, so the Home page's `useFeaturedProducts` (which calls `useComfys()`
@@ -146,7 +141,7 @@ const useComfys = (filters: UseComfysFilters = {}) => {
         limit: number;
         sortBy?: "price" | "title";
         order?: "asc" | "desc";
-      } = { skip, limit: PAGE_SIZE };
+      } = { skip, limit: NETWORK.PAGE_SIZE };
       if (sort) {
         params.sortBy = SORT_PARAMS[sort].sortBy;
         params.order = SORT_PARAMS[sort].order;

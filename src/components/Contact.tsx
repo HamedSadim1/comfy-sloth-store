@@ -1,13 +1,13 @@
 import React from "react";
 import styled from "styled-components";
 import { FiSend } from "react-icons/fi";
-import { newsletter_url } from "../utils/Contants";
+import { NETWORK } from "../constants";
 import { gradientText } from "../styles/gradientText";
 
 // Sub-component for the newsletter form
 const NewsletterForm: React.FC = () => (
   <form
-    action={newsletter_url}
+    action={NETWORK.NEWSLETTER}
     method="POST"
     className="contact-form"
   >

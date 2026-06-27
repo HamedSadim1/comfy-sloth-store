@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { services } from "../utils/Contants";
+import { services } from "../constants";
 import type { ServicesInterface } from "../types";
 
 // Sub-component for services header

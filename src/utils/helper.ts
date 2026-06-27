@@ -1,3 +1,5 @@
+import { COMMERCE } from "../constants";
+
 //? formatting price to euro currency  (number: number) => string  (number / 100) => string
 export const formatPrice = (number: number): string => {
   return new Intl.NumberFormat("nl-BE", {
@@ -7,20 +9,18 @@ export const formatPrice = (number: number): string => {
 };
 
 /**
- * Free-shipping threshold in cents. Carts above this value get free shipping
- * — used consistently by `CartTotals` and the checkout `OrderSummary` so the
- * two displays never disagree.
- * Mirrors the trust-row copy from the single-product page ("Over €50").
- */
-export const FREE_SHIPPING_THRESHOLD_CENTS = 5000;
-
-/**
  * Returns true when the supplied cart subtotal (in cents) qualifies for free
  * shipping.
+ *
+ * The threshold itself lives in the centralised `COMMERCE` namespace
+ * (`COMMERCE.FREE_SHIPPING_THRESHOLD_CENTS`); this helper just wires that
+ * constant into the boolean comparison so callers (`CartTotals`,
+ * `OrderSummary`, …) read from the same source of truth rather than
+ * duplicating the literal.
  */
 export const qualifiesForFreeShipping = (
   totalAmountCents: number
-): boolean => totalAmountCents >= FREE_SHIPPING_THRESHOLD_CENTS;
+): boolean => totalAmountCents >= COMMERCE.FREE_SHIPPING_THRESHOLD_CENTS;
 
 /**
  * Returns the grand total in cents (subtotal + shipping fee), with the

@@ -1,10 +1,10 @@
 import React from "react";
 import styled from "styled-components";
-import { APP_NAME } from "../utils/Contants";
+import { APP } from "../constants";
 import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
 import aboutImg from "../assets/hero-bcg-2.jpeg";
-import { services } from "../utils/Contants";
+import { services } from "../constants";
 import { gradientText } from "../styles/gradientText";
 
 // Small reusable eyebrow pill
@@ -23,7 +23,7 @@ const AboutHero: React.FC = () => (
           about
         </span>
       </nav>
-      <Eyebrow>About {APP_NAME}</Eyebrow>
+      <Eyebrow>About {APP.NAME}</Eyebrow>
       <h1 className="display">
         Slow living, <span className="accent">made well.</span>
       </h1>
@@ -59,7 +59,7 @@ const Story: React.FC = () => (
             A small studio with stubborn standards
           </h2>
           <p>
-            {APP_NAME} started in a converted warehouse in 1996, with three
+            {APP.NAME} started in a converted warehouse in 1996, with three
             carpenters, a single sofa design, and a conviction: that furniture
             should be made to be lived with, not looked at.
           </p>
@@ -73,7 +73,7 @@ const Story: React.FC = () => (
               &ldquo;We don&rsquo;t make furniture for show homes. We make it
               for the kind of home people actually live in.&rdquo;
             </p>
-            <cite>&mdash; Founder, {APP_NAME}</cite>
+            <cite>&mdash; Founder, {APP.NAME}</cite>
           </blockquote>
         </div>
       </div>
