@@ -1,5 +1,30 @@
 import { COMMERCE } from "../constants";
 
+/**
+ * Convert a kebab-case slug (e.g. `"home-decoration"`) into a
+ * presentation-friendly display name with each word capitalised
+ * and joined by spaces (`"Home Decoration"`).
+ *
+ * Originally lived as a file-private helper inside
+ * `useCategoryList.ts`. Promoted to the shared helpers module
+ * because (a) it's a pure string transform with no React/Query
+ * dependency, (b) any future filter label, breadcrumb, or nav
+ * item that surfaces a kebab-case slug will want the same shape.
+ *
+ * Algorithm:
+ *  1. Split on `-` to get each kebab segment.
+ *  2. Capitalise the first character of each segment
+ *     (`""`-segments skip capitalisation to avoid producing
+ *     leading/trailing space when a slug starts/ends with `-`).
+ *  3. Join segments back together with single spaces.
+ */
+export const prettifyCategoryName = (slug: string): string => {
+  return slug
+    .split("-")
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : ""))
+    .join(" ");
+};
+
 //? formatting price to euro currency  (number: number) => string  (number / 100) => string
 export const formatPrice = (number: number): string => {
   return new Intl.NumberFormat("nl-BE", {

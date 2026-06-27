@@ -2,23 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../services/apiClient";
 import type { Category } from "../types";
 import { NETWORK } from "../constants";
+import { prettifyCategoryName } from "../utils/helper";
 import ms from "ms";
-
-/**
- * Prettify a category slug for display in the filter chips.
- *
- * DummyJSON returns slugs like `home-decoration` and `mens-watches`.
- * The chip CSS capitalises the first character of each word in a string
- * (whitespace-separated only), so `home-decoration` would render as
- * `Home-decoration` without help. We split on `-`, capitalise each piece
- * and re-join with spaces so multi-word slugs read naturally.
- */
-function prettifyCategoryName(slug: string): string {
-  return slug
-    .split("-")
-    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : ""))
-    .join(" ");
-}
 
 /**
  * React Query hook that fetches the full dummyjson `/products/category-list`
