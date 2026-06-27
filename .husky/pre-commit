@@ -1,1 +1,32 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 1. Per-file eslint --fix on staged files (fast feedback, auto-fixes issues on the staged subset).
 npx lint-staged
+
+# 2. Project-wide TypeScript typecheck — under noUncheckedIndexedAccess +
+#    noImplicitReturns this catches drift across the whole codebase that
+#    per-file ESLint can't see (e.g. an added `?.` in one file breaking a
+#    downstream consumer). Bypass with SKIP_TYPECHECK=1 git commit ...
+if [ -z "$SKIP_TYPECHECK" ]; then
+  echo "==> Running TypeScript typecheck (set SKIP_TYPECHECK=1 to bypass)"
+  npm run typecheck --silent || {
+    echo "  \u274c TypeScript typecheck failed"
+    echo "  Use 'SKIP_TYPECHECK=1 git commit ...' as a last resort"
+    exit 1
+  }
+fi
+
+# 3. Project-wide ESLint — catches config-level issues + enforces the
+#    --max-warnings 0 floor across every file (not just staged). Bypass
+#    with SKIP_LINT=1 git commit ... (lint-staged above already gated the
+#    staged subset, so this is the safety net for un-staged but still
+#    shipping files).
+if [ -z "$SKIP_LINT" ]; then
+  echo "==> Running ESLint (set SKIP_LINT=1 to bypass)"
+  npm run lint --silent || {
+    echo "  \u274c ESLint failed"
+    echo "  Use 'SKIP_LINT=1 git commit ...' as a last resort"
+    exit 1
+  }
+fi
