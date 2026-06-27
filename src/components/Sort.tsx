@@ -2,6 +2,10 @@ import React, { useCallback } from "react";
 import { BsFillGridFill, BsList } from "react-icons/bs";
 import styled from "styled-components";
 import { useStore } from "../store";
+// Imported as a type-only so a new `<option value="...">` in this file
+// that isn't mapped in `useComfye.SORT_PARAMS` surfaces at compile
+// time instead of silently falling back server-side.
+import type { SortKey } from "../hooks/useComfye";
 import { HiChevronDown } from "react-icons/hi";
 
 // Sub-component for view toggle buttons
@@ -35,9 +39,23 @@ const ViewToggle: React.FC<ViewToggleProps> = ({ gridView, onToggleView }) => (
 
 // Sub-component for sort select
 interface SortSelectProps {
-  sort: string;
+  sort: SortKey;
   onSortChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
+
+/**
+ * Typed source of truth for the dropdown's option list. Each entry's
+ * `value` is asserted against `SortKey` via the literal-typed array,
+ * so adding `{ value: "rating", ... }` would fail to compile here
+ * unless `SortKey` is widened in `useComfye.ts` first. Single source
+ * of truth for the dropdown.
+ */
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "price-lowest", label: "price (lowest)" },
+  { value: "price-highest", label: "price (highest)" },
+  { value: "name-a", label: "name (a–z)" },
+  { value: "name-z", label: "name (z–a)" },
+];
 
 const SortSelect: React.FC<SortSelectProps> = ({ sort, onSortChange }) => (
   <div className="select-wrap">
@@ -52,10 +70,11 @@ const SortSelect: React.FC<SortSelectProps> = ({ sort, onSortChange }) => (
       onChange={onSortChange}
       aria-label="Sort products"
     >
-      <option value="price-lowest">price (lowest)</option>
-      <option value="price-highest">price (highest)</option>
-      <option value="name-a">name (a–z)</option>
-      <option value="name-z">name (z–a)</option>
+      {SORT_OPTIONS.map(({ value, label }) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
     </select>
     <HiChevronDown className="chevron" aria-hidden="true" />
   </div>
@@ -86,9 +105,14 @@ const Sort: React.FC = () => {
     [setGridView]
   );
 
-  // Adapter from the <select>'s ChangeEvent to the store's setSort(string).
+  // Adapter from the <select>'s ChangeEvent to the store's setSort
+  // (which now takes SortKey). The dropdown only emits values that are
+  // valid SortKey literals — the <option value="..."> attributes are
+  // statically checked against SortKey when SortSelect is rendered —
+  // so the cast at the boundary narrow is safe without a runtime guard.
   const handleSortChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => setSort(e.target.value),
+    (e: React.ChangeEvent<HTMLSelectElement>) =>
+      setSort(e.target.value as SortKey),
     [setSort]
   );
 

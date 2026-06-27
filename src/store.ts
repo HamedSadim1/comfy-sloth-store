@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import { Products } from "./types";
+// One-source-of-truth typing + initial value for the Sort dropdown. Lives
+// in `useComfye.ts` because that hook is the only place that knows how
+// to translate the slug into dummyjson's `sortBy`/`order` URL params.
+import { DEFAULT_SORT, type SortKey } from "./hooks/useComfye";
 
 // Interface for the filter query state
 interface ComfyStoreQuery {
@@ -12,10 +16,13 @@ interface ComfyStoreQuery {
   color: string;
   /** Sort key for the ProductList. Previously lived in FilterContext; moved
    *  here so the Sort component (and any future consumer) can read/write it
-   *  without dragging in the legacy context. */
-  sort: string;
+   *  without dragging in the legacy context. Typed as `SortKey` so any
+   *  new dropdown option that isn't mapped in `useComfye.SORT_PARAMS`
+   *  surfaces here at compile time instead of silently falling back to
+   *  DEFAULT_SORT in the hook. */
+  sort: SortKey;
   /** Running max of the loaded products — kept in state so consumers like
-   *  PageHero (which can't see the products list) can call `clearFilter`
+   *  PageHero (which doesn't see the products list) can call `clearFilter`
    *  without passing the value manually. Set by Filter after each product
    *  load. */
   maxPrice: number;
@@ -34,7 +41,7 @@ interface ComfyStore {
   updateCompany: (company: string) => void;
   updateColor: (color: string) => void;
   /** Update the sort key (consumed by Sort/ProductList). */
-  setSort: (sort: string) => void;
+  setSort: (sort: SortKey) => void;
   /** Track the running max price so PageHero can reset filters without a
    *  maxPrice argument. */
   setMaxPrice: (maxPrice: number) => void;
@@ -60,7 +67,7 @@ export const useStore = create<ComfyStore>((set) => ({
     category: "all",
     company: "all",
     color: "all",
-    sort: "price-lowest",
+    sort: DEFAULT_SORT,
     price: 0,
   },
 
@@ -119,8 +126,10 @@ export const useStore = create<ComfyStore>((set) => ({
     }));
   },
 
-  // Update sort key
-  setSort: (sort: string) => {
+  // Update sort key (typed as SortKey so the spread into
+  // comfyStoreQuery doesn't widen back to string; sort's type comes
+  // through verbatim into the store).
+  setSort: (sort: SortKey) => {
     set((state) => ({
       comfyStoreQuery: { ...state.comfyStoreQuery, sort },
     }));

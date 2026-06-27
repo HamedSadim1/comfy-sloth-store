@@ -28,18 +28,35 @@ const ProductList: React.FC = () => {
   const gridView = useStore((state) => state.comfyStoreQuery.gridView);
   const setNumberOfProducts = useStore((state) => state.setNumberOfProducts);
   const category = useStore((state) => state.comfyStoreQuery.category);
+  const sort = useStore((state) => state.comfyStoreQuery.sort);
   const company = useStore((state) => state.comfyStoreQuery.company);
   const color = useStore((state) => state.comfyStoreQuery.color);
   const price = useStore((state) => state.comfyStoreQuery.price);
 
   // Server-paginated fetch with React Query. `data` is
   // `InfiniteData<ProductsPage> | undefined`, ordered by `pageParams`.
-  // We pass the active `category` so React Query treats each category as a
-  // fresh query (different queryKey) and `useComfys` swaps the URL from
-  // `/products` to `/products/category/{slug}` server-side — without this
-  // every click on a category would re-filter the same already-loaded
-  // products, leaving empty grids whenever the picked category wasn't
-  // represented in the first 10 cached results.
+  //
+  // We pass both `category` AND `sort` so React Query treats any change
+  // to either as a fresh query (different queryKey) and the upstream
+  // dummyjson endpoint is configured correctly:
+  //
+  //   - `category`: swaps the URL from `/products` to
+  //     `/products/category/{slug}` server-side. Without this every
+  //     click on a category would re-filter the same already-loaded
+  //     products, leaving empty grids whenever the picked category
+  //     wasn't represented in the first 10 cached results.
+  //
+  //   - `sort`: appends `?sortBy=...&order=...` so the server returns
+  //     each paginated slice already-sorted. THIS IS NOT OPTIONAL for
+  //     infinite scroll to stay correctly ordered: client-side sort
+  //     over the accumulated page buffer would silently shuffle pages
+  //     from different server orderings together.
+  //
+  // `placeholderData: keepPreviousData` keeps the previous tuple's
+  // first page on screen while the new tuple resolves (no empty-grid
+  // flash). The IO observer and `handleLoadMore` are gated on
+  // `!isPlaceholderData` so phantom next-page fetches don't get
+  // appended to the soon-to-be-replaced buffer.
   const {
     data,
     error,
@@ -48,7 +65,7 @@ const ProductList: React.FC = () => {
     hasNextPage,
     isFetchingNextPage,
     isPlaceholderData,
-  } = useComfys({ category });
+  } = useComfys({ category, sort });
 
   // Accumulates Products[] across every page loaded so far. Re-derived
   // only when the query result identity changes (which it does on each
