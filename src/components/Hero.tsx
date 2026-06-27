@@ -5,19 +5,25 @@ import { HiArrowRight } from "react-icons/hi";
 import heroBcg from "../assets/hero-bcg.jpeg";
 import heroBcg2 from "../assets/hero-bcg-2.jpeg";
 import { gradientText } from "../styles/gradientText";
+import Eyebrow from "./Eyebrow";
 
-// Eyebrow tag at the top of the hero copy (collection / season label)
-const Eyebrow: React.FC = () => (
-  <span className="eyebrow" aria-label="New collection">
-    <span className="dot" />
-    New · Spring 2025 collection
-  </span>
-);
+// Dot decoration; lives in Hero (not in the shared Eyebrow primitive)
+// because it's specific to the Hero badge design.
+const Dot = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--clr-primary-5);
+  box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.18);
+`;
 
 // Hero copy block (eyebrow, heading, subhead, dual CTAs)
 const HeroCopy: React.FC = () => (
   <article className="copy">
-    <Eyebrow />
+    <Eyebrow tone="glass" ariaLabel="New collection" className="hero-eyebrow">
+      <Dot />
+      New · Spring 2025 collection
+    </Eyebrow>
     <h1 className="display">
       design your <span className="accent">comfort</span> zone
     </h1>
@@ -105,31 +111,25 @@ const Wrapper = styled.section`
     align-items: center;
   }
 
-  .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.45rem 1rem;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    color: var(--clr-primary-2);
+  /* The eyebrow is now a shared <Eyebrow tone="glass"> primitive;
+     the layout offset above the heading plus the typography overrides
+     (font-size / weight / tracking) stay component-local so the Hero
+     badge keeps its original micro-density without forking the
+     primitive into a new variant.
+
+     The '& .hero-eyebrow' descendant selector bumps specificity to
+     (0, 2, 0) by combining HeroWrapper's className with the className
+     we passed to <Eyebrow> at the call site. That wins the cascade
+     against the primitive's <Wrap> single-class rule regardless of
+     CSS source order - and crucially matches the actual DOM shape
+     (the <Eyebrow> span is a descendant of HeroWrapper), unlike
+     a hypothetical '&&.hero-eyebrow' compound which would require
+     all three classes on the same element (which doesn't exist). */
+  & .hero-eyebrow {
     font-size: 0.78rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 1.25rem;
-    box-shadow: var(--shadow-xs);
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--clr-primary-5);
-      box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.18);
-    }
   }
 
   .display {
