@@ -41,18 +41,19 @@ const useFilterProducts = ({
         return product.name.toLowerCase().includes(searchText.toLowerCase());
       })
       .filter((product) => {
-        // Filter by category
-        if (category.toLowerCase() === "all") {
-          return true;
-        }
-        return product.category.toLowerCase() === category.toLowerCase();
+        // Filter by category (mapper keeps casing from the API; the
+        // dropdown passes the raw choice back, so compare as-is or
+        // // case-insensitively — we normalize on both sides to stay safe).
+        const c = category.toLowerCase();
+        if (c === "all") return true;
+        return product.category.toLowerCase() === c;
       })
       .filter((product) => {
-        // Filter by company
-        if (company.toLowerCase() === "all") {
-          return true;
-        }
-        return product.company.toLowerCase() === company.toLowerCase();
+        // Filter by company (mapper lowercases the brand at the source,
+        // and the dropdown stores the raw lowercase value, so the compare
+        // keys already line up).
+        if (company === "all") return true;
+        return product.company === company;
       })
       .filter((product) => {
         // Filter by color

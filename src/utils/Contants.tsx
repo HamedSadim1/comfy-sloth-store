@@ -49,17 +49,17 @@ export const services: ServicesInterface[] = [
 ];
 
 /**
- * Base URL for fetching all products from the API.
+ * Base URL for fetching all products from the dummyjson API.
+ * Returns a paginated wrapper { products, total, skip, limit }; the APIClient
+ * unwraps it for callers.
  */
-export const products_url: string =
-  "https://course-api.com/react-store-products";
+export const products_url: string = "/products?limit=100";
 
 /**
- * Base URL for fetching a single product by ID from the API.
- * Append the product ID to this URL.
+ * Base URL for fetching a single product by ID from the dummyjson API.
+ * Append the product ID to this URL (e.g. `/products/12`).
  */
-export const single_product_url: string =
-  "https://course-api.com/react-store-single-product?id=";
+export const single_product_url: string = "/products/";
 
 /**
  * Application constants object for easy access and potential future expansion.

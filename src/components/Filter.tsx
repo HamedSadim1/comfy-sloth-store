@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
 import { FaCheck, FaSearch } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
-import { Categories, companies, colors } from "../data";
+import { colors } from "../data";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
 import { Products } from "../types";
@@ -261,11 +261,47 @@ const Filter: React.FC = () => {
 
   // Fetch products data
   const { data } = useComfys();
-  const products: Products[] = data || [];
+
+  // `data` from `useComfys` is `InfiniteData<ProductsPage>`; flatMap across
+  // pages to derive the accumulated Products[]. Memoise the fallback so it
+  // isn't a fresh `[]` each render — that would invalidate the brandOptions
+  // useMemo below forever.
+  const products = useMemo<Products[]>(
+    () => data?.pages.flatMap((page) => page.products) ?? [],
+    [data]
+  );
 
   // Calculate min and max prices
   const maxPrice = getMaxPrice(products);
   const minPrice = getMinPrice(products);
+
+  // Derive the brand <select> options from the loaded product set. With
+  // dummyjson the brand names are arbitrary strings ("Apple", "Samsung",
+  // …) so a hardcoded list is no longer useful. The mapper lowercases
+  // the brand at the source, so case-insensitive dedup is automatic.
+  // "all" stays first so the filter sentinel still works.
+  const brandOptions = useMemo(() => {
+    const known = products
+      .map((p) => p.company)
+      .filter((brand): brand is string => brand.length > 0);
+    return ["all", ...Array.from(new Set(known)).sort()];
+  }, [products]);
+
+  // Derive the category chip list from the loaded product set. dummyjson
+  // returns arbitrary categories ("smartphones", "laptops", "fragrances",
+  // …) that would never match a hardcoded home-furniture list — so we
+  // compute the chips from the live data, just like brandOptions. Values
+  // stay lowercase for canonical compare; the chip CSS already applies
+  // `text-transform: capitalize` for display.
+  const categoryOptions = useMemo(() => {
+    const known = products
+      .map((p) => p.category)
+      .filter(
+        (cat): cat is string =>
+          typeof cat === "string" && cat.length > 0 && cat !== "uncategorised"
+      );
+    return ["all", ...Array.from(new Set(known)).sort()];
+  }, [products]);
 
   // Initialize price to max on mount
   useEffect(() => {
@@ -318,13 +354,13 @@ const Filter: React.FC = () => {
         <SearchForm onSearch={handleSearch} />
         <hr className="divider" />
         <CategoryFilter
-          categories={Categories}
+          categories={categoryOptions}
           selectedCategory={category}
           onCategoryChange={handleCategoryChange}
         />
         <hr className="divider" />
         <CompanyFilter
-          companies={companies}
+          companies={brandOptions}
           selectedCompany={company}
           onCompanyChange={handleCompanyChange}
         />

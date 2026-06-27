@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Loading from "./components/Loading";
 
 // Lazy load page components for better performance (code splitting)
 const Error = lazy(() => import("./components/Error"));
@@ -12,8 +13,9 @@ const Checkout = lazy(() => import("./pages/CheckoutPage"));
 const PrivateRoute = lazy(() => import("./pages/PrivateRoute"));
 const SharedLayout = lazy(() => import("./pages/SharedLayout"));
 
-// Loading component for Suspense fallback
-const LoadingFallback: React.FC = () => <div>Loading...</div>;
+// Loading component for Suspense fallback — covers the brief moment
+// between route change and lazy chunk resolve.
+const LoadingFallback: React.FC = () => <Loading fullscreen />;
 
 /**
  * Main App component that sets up routing for the application.

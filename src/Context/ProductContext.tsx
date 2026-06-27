@@ -1,14 +1,12 @@
 import React, {
   useContext,
   createContext,
-  useEffect,
   useState,
   useCallback,
   useMemo,
 } from "react";
-import axios from "axios";
-import { Products, SingleProduct } from "../types";
-import { products_url } from "../utils/Contants";
+import { Products } from "../types";
+import useComfys from "../hooks/useComfye";
 
 // Interface for the product context value
 interface ProductContextProps {
@@ -19,10 +17,6 @@ interface ProductContextProps {
   products_loading: boolean;
   products_error: string;
   featuredProducts: Products[];
-  singleProduct: SingleProduct;
-  singleProductLoading: boolean;
-  singleProductError: string;
-  fetchSingleProduct: (url: string, id: string) => Promise<void>;
 }
 
 // Create context with undefined default for proper error checking
@@ -40,20 +34,25 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({
   // State for sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
-  // State for products list
-  const [products, setProducts] = useState<Products[]>([]);
-  const [products_loading, setProducts_loading] = useState<boolean>(false);
-  const [products_error, setProducts_error] = useState<string>("");
-
-  // State for single product
-  const [singleProduct, setSingleProduct] = useState<SingleProduct>(
-    {} as SingleProduct
+  // Pull the product list through the react-query-backed hook
+  // (which now hits dummyjson.com and runs each item through the mapper).
+  // `useComfys` returns an `InfiniteData<ProductsPage>` shape — flatMap
+  // across the loaded pages to expose the running Products[] to the rest
+  // of the tree, which doesn't need to know about pagination.
+  const {
+    data,
+    isLoading: products_loading,
+    error: productsQueryError,
+  } = useComfys();
+  const products = useMemo<Products[]>(
+    () => data?.pages.flatMap((page) => page.products) ?? [],
+    [data]
   );
-  const [singleProductLoading, setSingleProductLoading] =
-    useState<boolean>(false);
-  const [singleProductError, setSingleProductError] = useState<string>("");
+  const products_error =
+    (productsQueryError as Error | null)?.message ?? "";
 
-  // Memoized featured products derived from products
+  // Memoized featured products derived from products (the mapper marks any
+  // item with rating >= 4.0 as featured, so the Home page always has picks).
   const featuredProducts = useMemo(() => {
     return products.filter((product) => product.featured === true);
   }, [products]);
@@ -68,47 +67,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({
     setIsSidebarOpen(false);
   }, []);
 
-  // Function to fetch a single product, memoized for performance
-  const fetchSingleProduct = useCallback(async (url: string, id: string) => {
-    setSingleProductLoading(true);
-    setSingleProductError("");
-    try {
-      const response = await axios.get(`${url}${id}`);
-      if (response.statusText === "OK") {
-        const single_product: SingleProduct = response.data;
-        setSingleProduct(single_product);
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred";
-      setSingleProductError(errorMessage);
-    } finally {
-      setSingleProductLoading(false);
-    }
-  }, []);
-
-  // Effect to fetch products on mount
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setProducts_loading(true);
-      setProducts_error("");
-      try {
-        const response = await axios.get(products_url);
-        if (response.statusText === "OK") {
-          const fetchedProducts: Products[] = response.data;
-          setProducts(fetchedProducts);
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to fetch products";
-        setProducts_error(errorMessage);
-      } finally {
-        setProducts_loading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
-
   // Context value, memoized to prevent unnecessary re-renders
   const contextValue = useMemo<ProductContextProps>(
     () => ({
@@ -119,10 +77,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({
       products_loading,
       products_error,
       featuredProducts,
-      singleProduct,
-      singleProductLoading,
-      singleProductError,
-      fetchSingleProduct,
     }),
     [
       isSidebarOpen,
@@ -132,10 +86,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({
       products_loading,
       products_error,
       featuredProducts,
-      singleProduct,
-      singleProductLoading,
-      singleProductError,
-      fetchSingleProduct,
     ]
   );
 

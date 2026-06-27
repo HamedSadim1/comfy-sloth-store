@@ -6,7 +6,7 @@ import {
   AddToCart,
   Stars,
   PageHero,
-  Loading,
+  SingleProductSkeleton,
 } from "../components";
 import useComfy from "../hooks/useComfy";
 import { FiTruck, FiRefreshCw, FiShield } from "react-icons/fi";
@@ -58,7 +58,7 @@ const SingleProductPage = () => {
   const { data, error, isLoading } = useComfy(id!);
 
   if (isLoading) {
-    return <Loading />;
+    return <SingleProductSkeleton />;
   }
 
   if (error) {

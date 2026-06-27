@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { useAuth0 } from "@auth0/auth0-react";
+import Loading from "../components/Loading";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -11,7 +12,7 @@ const AuthWrapper = ({ children }: AuthWrapperProps) => {
   if (isLoading) {
     return (
       <Wrapper>
-        <h1>Loading...</h1>
+        <Loading label="Signing you in\u2026" size="lg" />
       </Wrapper>
     );
   }

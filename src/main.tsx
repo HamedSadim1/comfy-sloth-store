@@ -44,25 +44,28 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       }}
       cacheLocation="localstorage"
     >
-      {/* User context provider for user state */}
-      <UserProvider>
-        {/* Product context provider for product data */}
-        <ProductProvider>
-          {/* Filter context provider for product filtering */}
-          <FilterProvider>
-            {/* Cart context provider for shopping cart */}
-            <CartProvider>
-              {/* React Query provider for data fetching */}
-              <QueryClientProvider client={queryClient}>
-                {/* React Query Devtools for development */}
-                <ReactQueryDevtools />
+      {/* React Query provider for data fetching. Sits directly under
+          Auth0Provider so that every context below it (Product, Filter,
+          Cart) and any component that calls the useComfys / useComfy hooks
+          can resolve the QueryClient context. */}
+      <QueryClientProvider client={queryClient}>
+        {/* React Query Devtools for development */}
+        <ReactQueryDevtools />
+        {/* User context provider for user state */}
+        <UserProvider>
+          {/* Product context provider for product data */}
+          <ProductProvider>
+            {/* Filter context provider for product filtering */}
+            <FilterProvider>
+              {/* Cart context provider for shopping cart */}
+              <CartProvider>
                 {/* Main App component */}
                 <App />
-              </QueryClientProvider>
-            </CartProvider>
-          </FilterProvider>
-        </ProductProvider>
-      </UserProvider>
+              </CartProvider>
+            </FilterProvider>
+          </ProductProvider>
+        </UserProvider>
+      </QueryClientProvider>
     </Auth0Provider>
   </React.StrictMode>
 );

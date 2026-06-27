@@ -28,6 +28,11 @@ export interface ServicesInterface {
 // Product Types
 /**
  * Represents a product in the store.
+ *
+ * `company` is a free-form string (brand name from the upstream API)
+ * rather than the legacy `Company` enum. With dummyjson.com there are
+ * dozens of arbitrary brand names, so the brand list is now derived
+ * dynamically from the loaded product set instead of being hardcoded.
  */
 export interface Products {
   id: string;
@@ -35,7 +40,7 @@ export interface Products {
   price: number;
   image: string;
   colors: Color[];
-  company: Company;
+  company: string;
   description: string;
   category: string;
   shipping?: boolean;
@@ -120,16 +125,6 @@ export enum Color {
   Black = "#000",
   Blue = "#0000ff",
   Green = "#00ff00",
-}
-
-/**
- * Enum for product companies.
- */
-export enum Company {
-  Caressa = "caressa",
-  Ikea = "ikea",
-  Liddy = "liddy",
-  Marcos = "marcos",
 }
 
 // Utility Types

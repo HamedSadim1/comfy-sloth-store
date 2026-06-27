@@ -25,10 +25,21 @@ export interface APIResponse<T> {
 }
 
 /**
- * Axios instance configured for the application.
+ * Wrapper shape returned by dummyjson.com for any list endpoint
+ * (`/products`, `/products/category/:slug`, `/products/search`).
+ */
+export interface DummyProductsResponse<T> {
+  products: T[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+/**
+ * Axios instance configured for dummyjson.com.
  */
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: "https://course-api.com",
+  baseURL: "https://dummyjson.com",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -86,17 +97,41 @@ class APIClient<T> {
   }
 
   /**
-   * Fetches all items from the endpoint.
+   * Fetches all items from a dummyjson list endpoint.
+   * The list endpoints return a wrapper { products, total, skip, limit };
+   * this method unwraps `.products` for caller convenience.
    * @param config - Optional Axios request configuration
    * @returns Promise resolving to array of items
    */
   async getAll(config?: AxiosRequestConfig): Promise<T[]> {
     try {
-      const response = await axiosInstance.get<T[]>(this.endpoint, config);
+      const response = await axiosInstance.get<DummyProductsResponse<T>>(
+        this.endpoint,
+        config
+      );
+      return response.data.products;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Returns the full paginated wrapper response (products + total + skip + limit).
+   * Useful when you need to know how many results exist beyond this page.
+   */
+  async getAllRaw(
+    config?: AxiosRequestConfig
+  ): Promise<DummyProductsResponse<T>> {
+    try {
+      const response = await axiosInstance.get<DummyProductsResponse<T>>(
+        this.endpoint,
+        config
+      );
       return response.data;
     } catch (error) {
       this.handleError(error);
-      throw error; // Re-throw after logging
+      throw error;
     }
   }
 
