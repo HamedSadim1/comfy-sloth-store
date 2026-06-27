@@ -50,8 +50,15 @@ interface ComfyStore {
 }
 
 /**
- * Zustand store for managing product filter and view state.
- * Note: This store may overlap with FilterContext; consider consolidating for better architecture.
+ * Zustand store: single source of truth for product filter and view state.
+ *
+ * Migrated from the legacy `FilterContext` to Zustand; FilterContext has
+ * been deleted from the codebase (see PageHero.tsx + Sort.tsx in-code
+ * history comments) and there is nothing left for this store to overlap
+ * with. Do NOT reintroduce a parallel `FilterContext` — keep all filter /
+ * sort / view state exclusively in this Zustand store so consumers
+ * (Filter, Sort, ProductList, PageHero) share one React Query cache entry
+ * for the derived filter pipeline.
  */
 export const useStore = create<ComfyStore>((set) => ({
   // Initial state
