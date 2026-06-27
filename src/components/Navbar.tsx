@@ -3,15 +3,15 @@ import styled from "styled-components";
 import logo from "../assets/logo.svg";
 import { FaBars } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
-import { links } from "../utils/Contants";
+import { APP_NAME, links } from "../utils/Contants";
 import CartButtons from "./CartButton";
 import { useProductContext } from "../Context/ProductContext";
 
 // Nav header: logo + mobile toggle button
 const NavHeader: React.FC<{ onToggle: () => void }> = ({ onToggle }) => (
   <div className="nav-header">
-    <Link to="/" className="logo-link" aria-label="Comfy Sloth home">
-      <img src={logo} alt="comfy sloth" />
+    <Link to="/" className="logo-link" aria-label={`${APP_NAME} home`}>
+      <img src={logo} alt={APP_NAME.toLowerCase()} />
     </Link>
     <button
       type="button"

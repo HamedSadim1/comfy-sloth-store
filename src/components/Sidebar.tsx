@@ -3,7 +3,7 @@ import logo from "../assets/logo.svg";
 import { Link } from "react-router-dom";
 import { useProductContext } from "../Context/ProductContext";
 import { FaTimes } from "react-icons/fa";
-import { links } from "../utils/Contants";
+import { APP_NAME, links } from "../utils/Contants";
 import styled from "styled-components";
 import CartButtons from "./CartButton";
 import { useUserContext } from "../Context/UserContext";
@@ -11,7 +11,7 @@ import { useUserContext } from "../Context/UserContext";
 // Sub-component for sidebar header
 const SidebarHeader: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   <div className="sidebar-header">
-    <img src={logo} className="logo" alt="comfy sloth" />
+    <img src={logo} className="logo" alt={APP_NAME.toLowerCase()} />
     <button
       className="close-btn"
       onClick={onClose}

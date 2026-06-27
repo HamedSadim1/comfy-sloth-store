@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { APP_NAME } from "../utils/Contants";
 import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
 import aboutImg from "../assets/hero-bcg-2.jpeg";
@@ -21,7 +22,7 @@ const AboutHero: React.FC = () => (
           about
         </span>
       </nav>
-      <Eyebrow>About Comfy Sloth</Eyebrow>
+      <Eyebrow>About {APP_NAME}</Eyebrow>
       <h1 className="display">
         Slow living, <span className="accent">made well.</span>
       </h1>
@@ -57,7 +58,7 @@ const Story: React.FC = () => (
             A small studio with stubborn standards
           </h2>
           <p>
-            Comfy Sloth started in a converted warehouse in 1996, with three
+            {APP_NAME} started in a converted warehouse in 1996, with three
             carpenters, a single sofa design, and a conviction: that furniture
             should be made to be lived with, not looked at.
           </p>
@@ -71,7 +72,7 @@ const Story: React.FC = () => (
               &ldquo;We don&rsquo;t make furniture for show homes. We make it
               for the kind of home people actually live in.&rdquo;
             </p>
-            <cite>&mdash; Founder, Comfy Sloth</cite>
+            <cite>&mdash; Founder, {APP_NAME}</cite>
           </blockquote>
         </div>
       </div>
