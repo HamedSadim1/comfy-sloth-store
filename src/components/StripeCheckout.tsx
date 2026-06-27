@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import styled from "styled-components";
 import type {
   StripeCardElementChangeEvent,
-  StripeCardElement} from "@stripe/stripe-js";
-import {
-  loadStripe
 } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import {
   CardElement,
-  useStripe,
   Elements,
-  useElements,
 } from "@stripe/react-stripe-js";
 import { InlineSpinner } from "./Loading";
-import axios from "axios";
 import { useCartContext } from "../Context/CartContext";
 import { useUserContext } from "../Context/UserContext";
 import { formatPrice } from "../utils/helper";
@@ -24,8 +19,16 @@ import type { User } from "@auth0/auth0-react";
 import Eyebrow from "./Eyebrow";
 import Button from "./Button";
 import { ENV } from "../constants";
+import { useStripePayment } from "../hooks/useStripePayment";
 
-// Custom interface for CardElement options to avoid using 'any'
+// ─────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * CardElement style options. Typed without `any` so the cast at the
+ * configuration site stays strict.
+ */
 interface CardStyleOptions {
   style: {
     base: Record<string, string | Record<string, string>>;
@@ -33,10 +36,6 @@ interface CardStyleOptions {
   };
 }
 
-// Load Stripe promise outside component to avoid re-initialization
-const promise = loadStripe(import.meta.env[ENV.STRIPE_PUBLIC_KEY] as string);
-
-// Interface for PaymentStatus component props
 interface PaymentStatusProps {
   succeeded: boolean;
   myUser: User | null;
@@ -44,7 +43,6 @@ interface PaymentStatusProps {
   shippingFee: number;
 }
 
-// Interface for PaymentForm component props
 interface PaymentFormProps {
   cardStyle: CardStyleOptions;
   handleSubmit: React.FormEventHandler<HTMLFormElement>;
@@ -55,17 +53,38 @@ interface PaymentFormProps {
   error: string;
 }
 
-// Interface for CardError component props
 interface CardErrorProps {
   error: string;
 }
 
-// Interface for ResultMessage component props
 interface ResultMessageProps {
   succeeded: boolean;
 }
 
-// Sub-component: payment-method trusted-icon row + secure lockup
+// ─────────────────────────────────────────────────────────────────────
+// Module-level Stripe loader
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Stripe promise. Held at module scope so the Stripe SDK is
+ * initialised ONCE per page-load rather than once per `<CheckoutForm>`
+ * render, which would otherwise re-create the iframe on every state
+ * update.
+ */
+const stripePromise = loadStripe(
+  import.meta.env[ENV.STRIPE_PUBLIC_KEY] as string
+);
+
+// ─────────────────────────────────────────────────────────────────────
+// Sub-components (kept inline — tightly coupled to this form's state
+// surface; promoting them to separate files would force prop-drilling
+// the same shape back into CheckoutForm, defeating the hook extraction).
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Payment-method trusted-icon row + secure-lockup note. Purely visual;
+ * no props.
+ */
 const PaymentTrust: React.FC = () => (
   <div className="trust-row">
     <ul className="methods" aria-label="Accepted card networks">
@@ -86,7 +105,11 @@ const PaymentTrust: React.FC = () => (
   </div>
 );
 
-// Sub-component: payment status block.
+/**
+ * Conditional status card. Renders the success article (with the
+ * "Thank you — your order is on the way" copy) when `succeeded` is true,
+ * otherwise the running-subtotal / greeting card.
+ */
 const PaymentStatus: React.FC<PaymentStatusProps> = ({
   succeeded,
   myUser,
@@ -135,8 +158,10 @@ const PaymentStatus: React.FC<PaymentStatusProps> = ({
   );
 };
 
-// Sub-component: the actual card form (CardElement + Pay button).
-// Pay button uses the shared <Button variant="primary"> primitive.
+/**
+ * The actual card form (CardElement + Pay button). Pure presentation;
+ * receives the form-level state machine via props from `CheckoutForm`.
+ */
 const PaymentForm: React.FC<PaymentFormProps> = ({
   cardStyle,
   handleSubmit,
@@ -190,7 +215,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   );
 };
 
-// Sub-component: inline error pill
+/** Inline error pill. Returns null when no error to display. */
 const CardError: React.FC<CardErrorProps> = ({ error }) => {
   if (!error) return null;
   return (
@@ -200,7 +225,7 @@ const CardError: React.FC<CardErrorProps> = ({ error }) => {
   );
 };
 
-// Sub-component: post-payment link to the Stripe test dashboard
+/** Post-payment link to the Stripe test dashboard. */
 const ResultMessage: React.FC<ResultMessageProps> = ({ succeeded }) => {
   return (
     <p className={succeeded ? "result-message" : "result-message hidden"}>
@@ -217,46 +242,52 @@ const ResultMessage: React.FC<ResultMessageProps> = ({ succeeded }) => {
   );
 };
 
-// Main CheckoutForm component
+// ─────────────────────────────────────────────────────────────────────
+// Main CheckoutForm (thin orchestrator — all state lives in the hook)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Orchestrator: reads cart + user context, delegates the payment
+ * state machine to `useStripePayment`, and composes the visual
+ * sub-components (`PaymentStatus`, `PaymentForm`, etc.) with the
+ * hook's return value.
+ *
+ * The `onSucceeded` callback passed to the hook owns the post-payment
+ * UX (clearCart + 10-second redirect timer), keeping commerce / route
+ * concerns out of the payment state machine itself.
+ */
 const CheckoutForm: React.FC = () => {
   const { totalAmount, shippingFee, clearCart } = useCartContext();
   const { myUser } = useUserContext();
   const navigate = useNavigate();
 
-  // State for Stripe payment process
-  const [succeeded, setSucceeded] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [processing, setProcessing] = useState<boolean>(false);
-  const [disabled, setDisabled] = useState<boolean>(true);
-  const [clientSecret, setClientSecret] = useState<string>("");
+  // Post-success side effect: clear the local cart and bounce the user
+  // back to the home page after a brief "thank you" pause. Behaviour-
+  // preserving: the previous inline `setTimeout(..., 10000)` lives
+  // here verbatim, just injected through the hook's `onSucceeded`
+  // callback instead of being nested inside `handleSubmit`.
+  const handleSucceeded = useCallback(() => {
+    setTimeout(() => {
+      clearCart();
+      navigate("/");
+    }, 10000);
+  }, [clearCart, navigate]);
 
-  const stripe = useStripe();
-  const elements = useElements();
+  const {
+    succeeded,
+    processing,
+    error,
+    disabled,
+    handleSubmit,
+    handleChange,
+  } = useStripePayment({
+    totalAmount,
+    shippingFee,
+    onSucceeded: handleSucceeded,
+  });
 
-  // Function to create payment intent, memoized for performance.
-  // Post-refactor, the server only needs shippingFee + totalAmount;
-  // we no longer send `cart`.
-  const createPaymentIntent = useCallback(async () => {
-    try {
-      const response = await axios.post(
-        "/.netlify/functions/create-payment-intent",
-        {
-          shippingFee,
-          totalAmount,
-        }
-      );
-      setClientSecret(response.data.clientSecret);
-    } catch (_error) {
-      setError("Failed to create payment intent. Please try again.");
-    }
-  }, [shippingFee, totalAmount]);
-
-  // Effect to create payment intent on mount
-  useEffect(() => {
-    createPaymentIntent();
-  }, [createPaymentIntent]);
-
-  // Modernized card style options for the Stripe CardElement
+  // CardElement style opts. Re-allocated per render is fine — Stripe
+  // memoises internally and the surface area is small.
   const cardStyle: CardStyleOptions = {
     style: {
       base: {
@@ -276,38 +307,6 @@ const CheckoutForm: React.FC = () => {
       },
     },
   };
-
-  // Handle form submission, memoized for performance
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = useCallback(
-    async (e) => {
-      e.preventDefault();
-      setProcessing(true);
-      const payload = await stripe?.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements?.getElement(CardElement) as StripeCardElement,
-        },
-      });
-      if (payload?.error) {
-        setError(`Payment failed ${payload.error.message}`);
-        setProcessing(false);
-      } else {
-        setError("");
-        setProcessing(false);
-        setSucceeded(true);
-        setTimeout(() => {
-          clearCart();
-          navigate("/");
-        }, 10000);
-      }
-    },
-    [stripe, clientSecret, elements, clearCart, navigate]
-  );
-
-  // Handle card element change, memoized for performance
-  const handleChange = useCallback((event: StripeCardElementChangeEvent) => {
-    setDisabled(event.empty);
-    setError(event.error ? event.error.message : "");
-  }, []);
 
   return (
     <Wrapper>
@@ -345,16 +344,25 @@ const CheckoutForm: React.FC = () => {
   );
 };
 
-// Main StripeCheckout component
+// ─────────────────────────────────────────────────────────────────────
+// Top-level component (wraps CheckoutForm in <Elements>)
+// ─────────────────────────────────────────────────────────────────────
+
 const StripeCheckout: React.FC = () => {
   return (
     <Wrapper>
-      <Elements stripe={promise}>
+      <Elements stripe={stripePromise}>
         <CheckoutForm />
       </Elements>
     </Wrapper>
   );
 };
+
+// ─────────────────────────────────────────────────────────────────────
+// Styled-components (kept module-local because they're tightly coupled
+// to this file's specific layout; promoting them to a shared styles
+// module would harm cohesion without any re-use benefit.)
+// ─────────────────────────────────────────────────────────────────────
 
 const Wrapper = styled.section`
   width: 100%;
