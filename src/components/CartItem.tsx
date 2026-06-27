@@ -5,6 +5,9 @@ import { FaTrash, FaCheckCircle } from "react-icons/fa";
 import { useCartContext } from "../Context/CartContext";
 import type { CartItem as CartItemType } from "../Context/CartContext";
 import AmountButton from "./AmountButton";
+import Button from "./Button";
+import ColorSwatch from "./ColorSwatch";
+import { gradientText } from "../styles/gradientText";
 
 // Define interface for props
 interface CartItemProps {
@@ -35,7 +38,7 @@ const ItemInfo: React.FC<ItemInfoProps> = ({
       <h3 className="name">{name}</h3>
       {color && (
         <p className="color">
-          <span className="dot" style={{ background: color }} aria-hidden="true" />
+          <ColorSwatch color={color} size="xs" />
           <span className="dot-label">Color</span>
         </p>
       )}
@@ -100,14 +103,13 @@ const CartItem: React.FC<CartItemProps> = ({ items: cartData }) => {
       <p className="subtotal" aria-label={`Subtotal ${formatPrice(subtotal)}`}>
         {formatPrice(subtotal)}
       </p>
-      <button
+      <Button
         type="button"
-        className="remove-btn"
+        variant="icon"
         onClick={handleRemove}
         aria-label={`Remove ${name} from cart`}
-      >
-        <FaTrash />
-      </button>
+        iconRight={<FaTrash />}
+      />
     </Wrapper>
   );
 };
@@ -196,15 +198,6 @@ const Wrapper = styled.article`
     letter-spacing: 0;
   }
 
-  .color .dot {
-    width: 0.85rem;
-    height: 0.85rem;
-    border-radius: 50%;
-    box-shadow:
-      inset 0 0 0 2px var(--clr-white),
-      0 0 0 1px rgba(34, 34, 34, 0.12);
-  }
-
   .dot-label {
     text-transform: capitalize;
     letter-spacing: 0.04em;
@@ -248,38 +241,6 @@ const Wrapper = styled.article`
     justify-items: center;
   }
 
-  /* Remove button */
-  .remove-btn {
-    width: 2.4rem;
-    height: 2.4rem;
-    border-radius: var(--radius-full);
-    background: transparent;
-    border: 1px solid rgba(34, 34, 34, 0.1);
-    color: var(--clr-grey-4);
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition:
-      background 0.3s var(--ease-out),
-      color 0.3s var(--ease-out),
-      border-color 0.3s var(--ease-out),
-      transform 0.2s var(--ease-out);
-
-    svg {
-      width: 0.95rem;
-      height: 0.95rem;
-    }
-
-    &:hover,
-    &:focus-visible {
-      background: rgba(204, 80, 80, 0.08);
-      border-color: var(--clr-red-dark);
-      color: var(--clr-red-dark);
-      transform: scale(1.06);
-      outline: none;
-    }
-  }
-
   /* ============== Mobile stacked layout ============== */
   .title {
     grid-column: 1 / -1;
@@ -293,15 +254,6 @@ const Wrapper = styled.article`
   /* On mobile: gentle two-column row for price line + remove */
   .price-mobile {
     display: block;
-  }
-
-  /* Mobile: let the remove button sit at the bottom-right of its own row
-     (auto-flow) rather than trying to slot into a non-existent second
-     column at the top. This keeps the layout predictable and matches the
-     modern cart-row convention used across the rest of the shop. */
-  .remove-btn {
-    grid-column: 1 / -1;
-    justify-self: end;
   }
 
   /* Hide desktop-only columns explicitly */
@@ -350,22 +302,14 @@ const Wrapper = styled.article`
     }
 
     .subtotal {
+      ${gradientText}
       font-weight: 700;
-      background: var(--gradient-text);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
       font-size: 1.05rem;
     }
 
     .stepper {
       grid-column: 3;
       justify-self: center;
-    }
-
-    .remove-btn {
-      grid-column: 5;
-      grid-row: 1;
     }
   }
 `;

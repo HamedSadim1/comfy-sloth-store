@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 import { useCartContext } from "../Context/CartContext";
 import { useUserContext } from "../Context/UserContext";
 import {
@@ -7,20 +8,21 @@ import {
   FREE_SHIPPING_THRESHOLD_CENTS,
   qualifiesForFreeShipping,
 } from "../utils/helper";
-import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
 import { FaCheckCircle } from "react-icons/fa";
+import Eyebrow from "./Eyebrow";
+import Button from "./Button";
+import { gradientText } from "../styles/gradientText";
 
 // Reusable line item row used by the summary card.
 interface LineItemProps {
   label: string;
   value: string;
-  emphasis?: boolean;
   free?: boolean;
 }
 
-const LineItem: React.FC<LineItemProps> = ({ label, value, emphasis, free }) => (
-  <div className={`line ${emphasis ? "line-emphasis" : ""}`}>
+const LineItem: React.FC<LineItemProps> = ({ label, value, free }) => (
+  <div className="line">
     <span className="label">{label}</span>
     <span className={`value ${free ? "value-free" : ""}`}>{value}</span>
   </div>
@@ -31,17 +33,25 @@ interface ActionButtonProps {
   onLogin: () => void;
 }
 
-// Sub-component for action button (checkout or login)
+// Sub-component for action button (checkout or login). The primary
+// (logged-in) variant uses the shared <Button /> primitive as a Link.
+// The secondary (logged-out) variant stays inline because its
+// grey-1 → primary-2 fill differs from the available Button variants.
 const ActionButton: React.FC<ActionButtonProps> = ({ isLoggedIn, onLogin }) =>
   isLoggedIn ? (
-    <Link to="/checkout" className="cta-pill">
+    <Button
+      as={Link}
+      to="/checkout"
+      variant="primary"
+      fullWidth
+      iconRight={<HiArrowRight />}
+    >
       Proceed to checkout
-      <HiArrowRight />
-    </Link>
+    </Button>
   ) : (
     <button
       type="button"
-      className="cta-pill cta-pill-secondary"
+      className="cta-pill-secondary"
       onClick={onLogin}
     >
       Login to checkout
@@ -59,9 +69,6 @@ const CartTotals: React.FC = () => {
     await loginWithRedirect();
   }, [loginWithRedirect]);
 
-  // Free shipping kicks in over €50 cart value, mirroring the trust row
-  // copy from the single-product page. Shared helper for cross-component
-  // consistency.
   const isFreeShipping = qualifiesForFreeShipping(totalAmount);
   const shippingDisplay = isFreeShipping ? "Free" : formatPrice(shippingFee);
   const grandTotal = isFreeShipping
@@ -72,7 +79,7 @@ const CartTotals: React.FC = () => {
     <Wrapper>
       <div className="summary-card" aria-label="Order summary">
         <header className="card-head">
-          <span className="eyebrow">Order summary</span>
+          <Eyebrow>Order summary</Eyebrow>
           <h2 className="title">Cart total</h2>
         </header>
 
@@ -137,19 +144,6 @@ const Wrapper = styled.section`
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-  }
-
-  .eyebrow {
-    display: inline-block;
-    padding: 0.32rem 0.78rem;
-    background: var(--clr-primary-10);
-    color: var(--clr-primary-2);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    border-radius: var(--radius-full);
-    width: fit-content;
   }
 
   .title {
@@ -246,17 +240,16 @@ const Wrapper = styled.section`
   }
 
   .grand-total .figure {
+    ${gradientText}
     font-size: clamp(1.5rem, 2.2vw + 0.5rem, 1.85rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
   }
 
-  .cta-pill {
+  /* Secondary (logged-out) CTA keeps its own styling because the
+     grey-1 → primary-2 fill isn't represented in the Button variants. */
+  .cta-pill-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -264,7 +257,7 @@ const Wrapper = styled.section`
     width: 100%;
     padding: 1.05rem 1.5rem;
     border-radius: var(--radius-full);
-    background: var(--gradient-accent);
+    background: var(--clr-grey-1);
     color: var(--clr-white);
     border: none;
     font-size: 0.95rem;
@@ -285,6 +278,7 @@ const Wrapper = styled.section`
 
     &:hover,
     &:focus-visible {
+      background: var(--clr-primary-2);
       transform: translateY(-2px);
       box-shadow: var(--shadow-lg);
       filter: brightness(1.05);
@@ -294,22 +288,6 @@ const Wrapper = styled.section`
     &:hover svg,
     &:focus-visible svg {
       transform: translateX(4px);
-    }
-
-    &:focus-visible {
-      box-shadow:
-        var(--shadow-lg),
-        0 0 0 3px rgba(204, 152, 110, 0.45);
-    }
-  }
-
-  .cta-pill-secondary {
-    background: var(--clr-grey-1);
-    box-shadow: var(--shadow-md);
-
-    &:hover,
-    &:focus-visible {
-      background: var(--clr-primary-2);
     }
   }
 
@@ -324,7 +302,7 @@ const Wrapper = styled.section`
   @media (min-width: 992px) {
     align-self: start;
     position: sticky;
-    top: 6.5rem; /* below glass-blur navbar (5rem) + breathing room */
+    top: 6.5rem;
 
     .summary-card {
       padding: 1.85rem 1.75rem;

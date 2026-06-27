@@ -5,6 +5,7 @@ import { SingleProduct } from "../types";
 import { useSingleProductStore } from "../SingleProductStore";
 import { useCartContext } from "../Context/CartContext";
 import AmountButtons from "./AmountButton";
+import ColorSwatch from "./ColorSwatch";
 
 // Define types for props
 interface AddToCartProps {
@@ -17,7 +18,9 @@ interface ColorSelectorProps {
   onColorChange: (color: string) => void;
 }
 
-// Separate component for color selection to improve reusability and readability
+// Separate component for color selection to improve reusability and readability.
+// Uses the shared `<ColorSwatch>` primitive (interactive variant) so the
+// swatch visuals stay aligned with the Filter sidebar's swatches.
 const ColorSelector: React.FC<ColorSelectorProps> = ({
   colors,
   mainColor,
@@ -30,14 +33,12 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({
         {colors.map((color) => {
           const isActive = mainColor === color;
           return (
-            <button
+            <ColorSwatch
               key={color}
-              type="button"
-              role="radio"
-              aria-checked={isActive}
-              aria-label={`Select color ${color}`}
-              style={{ background: color }}
-              className={isActive ? "swatch active" : "swatch"}
+              color={color}
+              size="lg"
+              active={isActive}
+              ariaLabel={`Select color ${color}`}
               onClick={() => onColorChange(color)}
             />
           );
@@ -133,47 +134,13 @@ const Wrapper = styled.section`
     margin-bottom: 0.55rem;
   }
 
-  /* Color picker */
+  /* Color picker — visuals come from the shared <ColorSwatch /> primitive;
+     we only style the surrounding swatch container + spacing. */
   .colors {
     .swatches {
       display: flex;
       flex-wrap: wrap;
       gap: 0.55rem;
-    }
-
-    .swatch {
-      width: 1.6rem;
-      height: 1.6rem;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      box-shadow: inset 0 0 0 2px var(--clr-white);
-      cursor: pointer;
-      opacity: 0.65;
-      appearance: none;
-      padding: 0;
-      transition:
-        opacity 0.3s var(--ease-out),
-        transform 0.2s var(--ease-out),
-        box-shadow 0.3s var(--ease-out);
-
-      &:hover {
-        opacity: 0.95;
-        transform: scale(1.08);
-      }
-
-      &:focus-visible {
-        outline: none;
-        opacity: 1;
-        box-shadow:
-          inset 0 0 0 2px var(--clr-white),
-          0 0 0 3px rgba(204, 152, 110, 0.4);
-      }
-
-      &.active {
-        opacity: 1;
-        transform: scale(1.05);
-        border-color: var(--clr-grey-1);
-      }
     }
   }
 
@@ -185,7 +152,9 @@ const Wrapper = styled.section`
     flex-wrap: wrap;
   }
 
-  /* Add to cart button */
+  /* Add to cart button — kept inline because the rotate-icon-on-hover
+     microinteraction isn't worth forcing into the shared Button primitive
+     on its own. */
   .add-btn {
     display: inline-flex;
     align-items: center;

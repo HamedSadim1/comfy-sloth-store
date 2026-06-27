@@ -6,10 +6,9 @@ import { FaShoppingCart } from "react-icons/fa";
 import { FiLock } from "react-icons/fi";
 import { StripeCheckout } from "../components";
 import { useCartContext } from "../Context/CartContext";
-import {
-  formatPrice,
-  qualifiesForFreeShipping,
-} from "../utils/helper";
+import { formatPrice, qualifiesForFreeShipping } from "../utils/helper";
+import Eyebrow from "../components/Eyebrow";
+import { gradientText } from "../styles/gradientText";
 
 // Single step in the three-step breadcrumb progress trail.
 const StepDot: React.FC<{ index: number; label: string }> = ({
@@ -39,7 +38,7 @@ const CheckoutHero: React.FC = () => {
           <span className="sep" aria-hidden="true" />
           <StepDot index={3} label="Confirmation" />
         </nav>
-        <span className="eyebrow">Secure checkout</span>
+        <Eyebrow tone="glass">Secure checkout</Eyebrow>
         <h1 className="display">
           Almost done<span className="accent">.</span>
         </h1>
@@ -63,7 +62,7 @@ const OrderSummary: React.FC = () => {
   return (
     <SummaryCard aria-label="Order summary">
       <header className="card-head">
-        <span className="eyebrow">Order summary</span>
+        <Eyebrow>Order summary</Eyebrow>
         <h2 className="title">In your bag</h2>
       </header>
 
@@ -113,7 +112,7 @@ const CheckoutPage: React.FC = () => {
                 <div className="icon-wrap" aria-hidden="true">
                   <FaShoppingCart />
                 </div>
-                <span className="empty-eyebrow">Your selection</span>
+                <Eyebrow>Your selection</Eyebrow>
                 <h2 className="title">
                   Your cart is empty<span className="accent">.</span>
                 </h2>
@@ -230,23 +229,6 @@ const HeroSection = styled.section`
     }
   }
 
-  .eyebrow {
-    display: inline-block;
-    padding: 0.4rem 0.95rem;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    color: var(--clr-primary-2);
-    font-size: 0.74rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    border-radius: var(--radius-full);
-    margin-bottom: 1.25rem;
-    box-shadow: var(--shadow-xs);
-  }
-
   .display {
     font-size: var(--fs-display-sm);
     font-weight: 800;
@@ -259,10 +241,7 @@ const HeroSection = styled.section`
   }
 
   .display .accent {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    ${gradientText}
   }
 
   .lede {
@@ -403,19 +382,6 @@ const Section = styled.section`
     }
   }
 
-  .empty-eyebrow {
-    display: inline-block;
-    padding: 0.32rem 0.78rem;
-    background: rgba(255, 255, 255, 0.85);
-    color: var(--clr-primary-2);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    border-radius: var(--radius-full);
-    box-shadow: var(--shadow-xs);
-  }
-
   .empty-card .title {
     font-size: clamp(1.5rem, 2vw + 0.5rem, 2rem);
     font-weight: 800;
@@ -428,10 +394,7 @@ const Section = styled.section`
   }
 
   .empty-card .title .accent {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    ${gradientText}
   }
 
   .empty-card .lede {
@@ -514,19 +477,6 @@ const SummaryCard = styled.section`
     gap: 0.5rem;
   }
 
-  .eyebrow {
-    display: inline-block;
-    padding: 0.32rem 0.78rem;
-    background: var(--clr-primary-10);
-    color: var(--clr-primary-2);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    border-radius: var(--radius-full);
-    width: fit-content;
-  }
-
   .title {
     color: var(--clr-grey-1);
     font-size: 1.35rem;
@@ -589,14 +539,11 @@ const SummaryCard = styled.section`
   }
 
   .grand-total .figure {
+    ${gradientText}
     font-size: clamp(1.5rem, 2.2vw + 0.5rem, 1.85rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
   }
 
   .secured {

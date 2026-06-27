@@ -7,6 +7,7 @@ import { HiArrowLeft } from "react-icons/hi";
 import CartColumns from "./CartColumns";
 import CartItem from "./CartItem";
 import CartTotals from "./CartTotals";
+import Button from "./Button";
 
 // Functional component for displaying cart content
 // Renders the cart items, totals, and action buttons in a modern layout that
@@ -27,19 +28,23 @@ const CarContent: React.FC = () => {
         </ul>
 
         <div className="actions">
-          <Link to="/products" className="continue-link">
-            <HiArrowLeft aria-hidden="true" />
+          <Button
+            as={Link}
+            to="/products"
+            variant="ghost"
+            iconLeft={<HiArrowLeft aria-hidden="true" />}
+          >
             Continue shopping
-          </Link>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="clear-btn"
+            variant="danger"
             onClick={clearCart}
             aria-label="Clear shopping cart"
+            iconRight={<FiX aria-hidden="true" />}
           >
-            <FiX aria-hidden="true" />
             Clear cart
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -84,82 +89,6 @@ const Wrapper = styled.section`
     flex-wrap: wrap;
     gap: 0.85rem;
     margin-top: 1.25rem;
-  }
-
-  .continue-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.85rem 1.25rem;
-    border-radius: var(--radius-full);
-    background: var(--clr-white);
-    border: 1px solid rgba(34, 34, 34, 0.1);
-    color: var(--clr-grey-1);
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0;
-    transition:
-      background 0.3s var(--ease-out),
-      color 0.3s var(--ease-out),
-      border-color 0.3s var(--ease-out),
-      transform 0.2s var(--ease-out),
-      box-shadow 0.3s var(--ease-out);
-    box-shadow: var(--shadow-xs);
-
-    svg {
-      width: 0.95rem;
-      height: 0.95rem;
-      transition: transform 0.3s var(--ease-out);
-    }
-
-    &:hover,
-    &:focus-visible {
-      background: var(--clr-primary-10);
-      color: var(--clr-primary-2);
-      border-color: var(--clr-primary-7);
-      transform: translateX(-2px);
-      box-shadow: var(--shadow-sm);
-      outline: none;
-    }
-
-    &:hover svg,
-    &:focus-visible svg {
-      transform: translateX(-3px);
-    }
-  }
-
-  .clear-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.85rem 1.25rem;
-    border-radius: var(--radius-full);
-    background: transparent;
-    border: 1px solid var(--clr-red-dark);
-    color: var(--clr-red-dark);
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0;
-    cursor: pointer;
-    transition:
-      background 0.3s var(--ease-out),
-      color 0.3s var(--ease-out),
-      transform 0.2s var(--ease-out);
-
-    svg {
-      width: 1rem;
-      height: 1rem;
-    }
-
-    &:hover,
-    &:focus-visible {
-      background: var(--clr-red-dark);
-      color: var(--clr-white);
-      transform: translateY(-2px);
-      outline: none;
-    }
   }
 
   @media (min-width: 992px) {

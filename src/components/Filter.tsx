@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { formatPrice } from "../utils/helper";
-import { FaCheck, FaSearch } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
 import { colors } from "../data";
 import { useStore } from "../store";
 import useComfys from "../hooks/useComfye";
 import { Products } from "../types";
+import Button from "./Button";
+import ColorSwatch from "./ColorSwatch";
 
 // Define interfaces for sub-component props
 interface SearchFormProps {
@@ -145,44 +147,44 @@ const CompanyFilter: React.FC<CompanyFilterProps> = ({
   </FilterGroup>
 );
 
-// Sub-component for color filter
+// Sub-component for color filter — uses the shared <ColorSwatch />
+// primitive so the swatch visuals are aligned with AddToCart.
 const ColorFilter: React.FC<ColorFilterProps> = ({
   colors,
   selectedColor,
   onColorChange,
-}) => (
-  <FilterGroup title="Color">
-    <div className="color-list">
-      <button
-        type="button"
-        name="color"
-        onClick={() => onColorChange("all")}
-        className={selectedColor === "all" ? "color-text active" : "color-text"}
-      >
-        all
-      </button>
-      {colors.map((colorData) => (
+}) => {
+  const isAllActive = selectedColor === "all";
+  return (
+    <FilterGroup title="Color">
+      <div className="color-list">
         <button
-          key={colorData}
           type="button"
           name="color"
-          onClick={() => onColorChange(colorData)}
-          style={{ background: colorData }}
-          className={
-            selectedColor.toLowerCase() === colorData.toLowerCase()
-              ? "color-swatch active"
-              : "color-swatch"
-          }
-          aria-label={`Filter by color ${colorData}`}
+          onClick={() => onColorChange("all")}
+          className={isAllActive ? "color-text active" : "color-text"}
         >
-          {selectedColor.toLowerCase() === colorData.toLowerCase() && (
-            <FaCheck />
-          )}
+          all
         </button>
-      ))}
-    </div>
-  </FilterGroup>
-);
+        {colors.map((colorData) => {
+          const isActive =
+            selectedColor.toLowerCase() === colorData.toLowerCase();
+          return (
+            <ColorSwatch
+              key={colorData}
+              color={colorData}
+              size="md"
+              active={isActive}
+              ariaLabel={`Filter by color ${colorData}`}
+              onClick={() => onColorChange(colorData)}
+              showCheck
+            />
+          );
+        })}
+      </div>
+    </FilterGroup>
+  );
+};
 
 // Sub-component for price filter
 const PriceFilter: React.FC<PriceFilterProps> = ({
@@ -231,12 +233,18 @@ const ShippingFilter: React.FC<ShippingFilterProps> = ({
   </FilterGroup>
 );
 
-// Sub-component for clear button
+// Sub-component for clear button — uses the shared <Button variant="danger" />
+// primitive for consistency with the cart's clear button.
 const ClearButton: React.FC<ClearButtonProps> = ({ onClear }) => (
-  <button type="button" className="clear-btn" onClick={onClear}>
-    <FiX />
+  <Button
+    type="button"
+    variant="danger"
+    onClick={onClear}
+    fullWidth
+    iconRight={<FiX />}
+  >
     Clear filters
-  </button>
+  </Button>
 );
 
 // Main functional component for filters
@@ -275,11 +283,7 @@ const Filter: React.FC = () => {
   const maxPrice = getMaxPrice(products);
   const minPrice = getMinPrice(products);
 
-  // Derive the brand <select> options from the loaded product set. With
-  // dummyjson the brand names are arbitrary strings ("Apple", "Samsung",
-  // …) so a hardcoded list is no longer useful. The mapper lowercases
-  // the brand at the source, so case-insensitive dedup is automatic.
-  // "all" stays first so the filter sentinel still works.
+  // Derive the brand <select> options from the loaded product set.
   const brandOptions = useMemo(() => {
     const known = products
       .map((p) => p.company)
@@ -287,12 +291,7 @@ const Filter: React.FC = () => {
     return ["all", ...Array.from(new Set(known)).sort()];
   }, [products]);
 
-  // Derive the category chip list from the loaded product set. dummyjson
-  // returns arbitrary categories ("smartphones", "laptops", "fragrances",
-  // …) that would never match a hardcoded home-furniture list — so we
-  // compute the chips from the live data, just like brandOptions. Values
-  // stay lowercase for canonical compare; the chip CSS already applies
-  // `text-transform: capitalize` for display.
+  // Derive the category chip list from the loaded product set.
   const categoryOptions = useMemo(() => {
     const known = products
       .map((p) => p.category)
@@ -402,7 +401,7 @@ const Wrapper = styled.aside`
   @media (min-width: 768px) {
     align-self: start;
     position: sticky;
-    top: 6.5rem; /* below glass-blur navbar (5rem) + a bit of breathing room */
+    top: 6.5rem;
   }
 
   .divider {
@@ -579,39 +578,6 @@ const Wrapper = styled.aside`
         border-color: var(--clr-primary-5);
       }
     }
-
-    .color-swatch {
-      width: 1.5rem;
-      height: 1.5rem;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      box-shadow: inset 0 0 0 2px var(--clr-white);
-      cursor: pointer;
-      opacity: 0.65;
-      display: grid;
-      place-items: center;
-      transition:
-        opacity 0.3s var(--ease-out),
-        transform 0.2s var(--ease-out),
-        border-color 0.3s var(--ease-out);
-
-      svg {
-        width: 0.7rem;
-        height: 0.7rem;
-        color: var(--clr-white);
-      }
-
-      &:hover {
-        opacity: 0.9;
-        transform: scale(1.06);
-      }
-
-      &.active {
-        opacity: 1;
-        border-color: var(--clr-grey-1);
-        transform: scale(1.06);
-      }
-    }
   }
 
   .price {
@@ -759,43 +725,6 @@ const Wrapper = styled.aside`
       color: var(--clr-grey-2);
       text-transform: none;
       letter-spacing: 0;
-    }
-  }
-
-  .clear-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    width: 100%;
-    justify-content: center;
-    padding: 0.7rem 1rem;
-    border-radius: var(--radius-full);
-    background: transparent;
-    border: 1px solid var(--clr-red-dark);
-    color: var(--clr-red-dark);
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0;
-    cursor: pointer;
-    transition:
-      background 0.3s var(--ease-out),
-      color 0.3s var(--ease-out),
-      transform 0.2s var(--ease-out);
-
-    svg {
-      width: 0.95rem;
-      height: 0.95rem;
-    }
-
-    &:hover {
-      background: var(--clr-red-dark);
-      color: var(--clr-white);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--clr-red-dark);
-      outline-offset: 2px;
     }
   }
 `;

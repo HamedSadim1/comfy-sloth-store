@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { useProductContext } from "../Context/ProductContext";
 import { useCartContext } from "../Context/CartContext";
 import { useUserContext } from "../Context/UserContext";
+import Button from "./Button";
 
 // Define types for sub-component props
 interface CartLinkProps {
@@ -18,18 +19,28 @@ interface AuthButtonProps {
   onLogout: () => void;
 }
 
-// Sub-component for the cart link to improve reusability
+// Sub-component for the cart link — wraps <Link> with the shared
+// <Button variant="cart" /> primitive.
 const CartLink: React.FC<CartLinkProps> = ({ totalItems, onClick }) => (
-  <Link to="/cart" className="cart-btn" onClick={onClick}>
+  <Button
+    as={Link}
+    to="/cart"
+    variant="cart"
+    onClick={onClick}
+    aria-label={`Cart, ${totalItems} item${totalItems === 1 ? "" : "s"}`}
+  >
     <span className="cart-container">
       <FaShoppingCart />
       <span className="cart-value">{totalItems}</span>
     </span>
     <span className="cart-label">Cart</span>
-  </Link>
+  </Button>
 );
 
-// Sub-component for authentication button
+// Sub-component for authentication button. The secondary styling is
+// hand-tuned for an `outline → inverted-grey` transition that doesn't
+// fully map to the available Button variants, so the body lives here
+// and only the typography + base layout borrow from the design system.
 const AuthButton: React.FC<AuthButtonProps> = ({
   isAuthenticated,
   onLogin,
@@ -46,12 +57,7 @@ const AuthButton: React.FC<AuthButtonProps> = ({
       <FaUserMinus />
     </button>
   ) : (
-    <button
-      type="button"
-      className="auth-btn"
-      onClick={onLogin}
-      aria-label="Log in"
-    >
+    <button type="button" className="auth-btn" onClick={onLogin} aria-label="Log in">
       <span className="auth-label">Login</span>
       <FaUserPlus />
     </button>
@@ -92,33 +98,13 @@ const Wrapper = styled.div`
   align-items: center;
   gap: 0.6rem;
 
-  .cart-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.55rem 0.95rem 0.55rem 0.85rem;
-    border-radius: var(--radius-full);
-    background: var(--clr-primary-10);
-    color: var(--clr-primary-2);
-    font-size: 0.92rem;
-    font-weight: 600;
-    letter-spacing: 0;
-    transition: background 0.3s var(--ease-out),
-      color 0.3s var(--ease-out), transform 0.3s var(--ease-out),
-      box-shadow 0.3s var(--ease-out);
-
-    &:hover {
-      background: var(--gradient-accent);
-      color: var(--clr-white);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-sm);
-    }
-  }
-
+  /* The cart-link visual rules come from <Button variant="cart" />;
+     we only style the inner cart-container and the value-bubble here. */
   .cart-container {
     display: flex;
     align-items: center;
     position: relative;
+    gap: 0.4rem;
 
     svg {
       height: 1.15rem;
@@ -144,6 +130,8 @@ const Wrapper = styled.div`
     box-shadow: 0 0 0 2px var(--clr-white);
   }
 
+  /* Auth button keeps its custom hover-inverted styling (outline →
+     filled grey-1) — too specific to fit the shared Button variants. */
   .auth-btn {
     display: inline-flex;
     align-items: center;
@@ -157,27 +145,24 @@ const Wrapper = styled.div`
     border-radius: var(--radius-full);
     cursor: pointer;
     letter-spacing: 0;
-    transition: background 0.3s var(--ease-out),
-      border-color 0.3s var(--ease-out), color 0.3s var(--ease-out),
-      transform 0.3s var(--ease-out);
 
     svg {
       width: 0.95rem;
       height: 0.95rem;
     }
+  }
 
-    &:hover {
-      background: var(--clr-grey-1);
-      color: var(--clr-white);
-      border-color: var(--clr-grey-1);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-sm);
-    }
+  .auth-btn:hover {
+    background: var(--clr-grey-1);
+    color: var(--clr-white);
+    border-color: var(--clr-grey-1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
 
-    &:focus-visible {
-      outline: 2px solid var(--clr-primary-5);
-      outline-offset: 2px;
-    }
+  .auth-btn:focus-visible {
+    outline: 2px solid var(--clr-primary-5);
+    outline-offset: 2px;
   }
 `;
 

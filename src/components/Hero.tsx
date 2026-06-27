@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { HiArrowRight } from "react-icons/hi";
 import heroBcg from "../assets/hero-bcg.jpeg";
 import heroBcg2 from "../assets/hero-bcg-2.jpeg";
+import { gradientText } from "../styles/gradientText";
 
 // Eyebrow tag at the top of the hero copy (collection / season label)
 const Eyebrow: React.FC = () => (
@@ -141,10 +142,7 @@ const Wrapper = styled.section`
     margin-bottom: 1.5rem;
 
     .accent {
-      background: var(--gradient-text);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      ${gradientText}
       font-style: italic;
     }
   }

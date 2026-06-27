@@ -1,31 +1,6 @@
 import React from "react";
-import styled, { keyframes, css } from "styled-components";
-
-const shimmer = keyframes`
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-`;
-
-/* Reused ramp — same brand-toned wash as ProductGridSkeleton so the
-   loading language stays consistent across the two skeletons. */
-const SHIMMER_GRADIENT = `linear-gradient(
-  90deg,
-  rgba(204, 152, 110, 0.06) 0%,
-  rgba(204, 152, 110, 0.22) 50%,
-  rgba(204, 152, 110, 0.06) 100%
-)`;
-
-// Wrap the shared shimmer block in styled-components' `css` helper. The
-// plain template literal would interpolate `${shimmer}` (a styled-
-// components Keyframes handle) as an untagged string, breaking the
-// runtime keyframe tracker. Tagged via `css` so when we drop `${slide}`
-// into the parent `styled.div` block below, the keyframe identifier is
-// preserved and de-duplicated correctly.
-const slide = css`
-  background: ${SHIMMER_GRADIENT};
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.4s ease-in-out infinite;
-`;
+import styled from "styled-components";
+import { SHIMMER_GRADIENT, shimmer, shimmerFill } from "../styles/shimmer";
 
 /**
  * Skeleton placeholder that mirrors the SingleProductPage card-area
@@ -38,6 +13,11 @@ const slide = css`
  * meaningful. The transitions still keep a stable feel because the
  * overall page gradient + min-height on the outer wrapper match the
  * post-load layout.
+ *
+ * Uses the shared `shimmerFill` helper from `src/styles/shimmer`. The
+ * few inline `${SHIMMER_GRADIENT}` + `${shimmer}` blocks remain only on
+ * selectors that already uniquely style height/width — every other
+ * placeholder block now drops in `shimmerFill` directly.
  */
 const SingleProductSkeleton: React.FC = () => {
   return (
@@ -141,7 +121,7 @@ const Wrapper = styled.div`
     width: 9.5rem;
     border-radius: var(--radius-full);
     margin-bottom: 1.75rem;
-    ${slide}
+    ${shimmerFill}
   }
 
   .product-center {
@@ -165,7 +145,7 @@ const Wrapper = styled.div`
   .hero-img {
     aspect-ratio: 1 / 1;
     border-radius: var(--radius-xl);
-    ${slide}
+    ${shimmerFill}
   }
 
   .thumbs-strip {
@@ -178,7 +158,7 @@ const Wrapper = styled.div`
       aspect-ratio: 1 / 1;
       border-radius: var(--radius-md);
       border: 1px solid rgba(34, 34, 34, 0.06);
-      ${slide}
+      ${shimmerFill}
     }
   }
 
@@ -257,7 +237,7 @@ const Wrapper = styled.div`
       height: 1.95rem;
       width: 7rem;
       border-radius: var(--radius-full);
-      ${slide}
+      ${shimmerFill}
     }
   }
 
@@ -271,7 +251,7 @@ const Wrapper = styled.div`
     height: 3.2rem;
     width: 100%;
     border-radius: var(--radius-full);
-    ${slide}
+    ${shimmerFill}
   }
 
   .trust-row {
@@ -294,9 +274,7 @@ const Wrapper = styled.div`
       width: 2rem;
       height: 2rem;
       border-radius: var(--radius-md);
-      background: ${SHIMMER_GRADIENT};
-      background-size: 200% 100%;
-      animation: ${shimmer} 1.4s ease-in-out infinite;
+      ${shimmerFill}
     }
 
     .trust-meta {
@@ -306,23 +284,21 @@ const Wrapper = styled.div`
       flex: 1;
       min-width: 0;
 
-      .line.title {
-        height: 0.85rem;
-        width: 55%;
+      .line.title,
+      .line.meta {
         border-radius: var(--radius-full);
         background: ${SHIMMER_GRADIENT};
         background-size: 200% 100%;
         animation: ${shimmer} 1.4s ease-in-out infinite;
         margin: 0;
       }
+      .line.title {
+        height: 0.85rem;
+        width: 55%;
+      }
       .line.meta {
         height: 0.78rem;
         width: 35%;
-        border-radius: var(--radius-full);
-        background: ${SHIMMER_GRADIENT};
-        background-size: 200% 100%;
-        animation: ${shimmer} 1.4s ease-in-out infinite;
-        margin: 0;
       }
     }
   }

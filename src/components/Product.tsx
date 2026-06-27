@@ -4,6 +4,7 @@ import { formatPrice } from "../utils/helper";
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { Products } from "../types";
+import { gradientText } from "../styles/gradientText";
 
 // Define interface for props
 interface ProductProps {
@@ -160,12 +161,8 @@ const Wrapper = styled.article`
     margin-bottom: 0;
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--clr-primary-2);
+    ${gradientText}
     letter-spacing: 0;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
     white-space: nowrap;
   }
 `;

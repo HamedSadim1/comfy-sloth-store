@@ -1,5 +1,6 @@
 import React from "react";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
+import { shimmer, SHIMMER_GRADIENT } from "../styles/shimmer";
 
 export interface ProductGridSkeletonProps {
   /** Layout variant. Matches the real ProductList view toggle. */
@@ -8,19 +9,18 @@ export interface ProductGridSkeletonProps {
   count?: number;
 }
 
-const shimmer = keyframes`
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-`;
-
 /**
  * Skeleton placeholder that mirrors the real product-card layout (a
  * square image block + a name line + a price line) so the transition
  * from "loading" to "loaded" doesn't visibly shift the page.
  *
- * Renders a fixed count of inert, non-interactive placeholders. honours
+ * Renders a fixed count of inert, non-interactive placeholders. Honours
  * prefers-reduced-motion via the global rule in index.css (animation-
  * duration collapses to ~0).
+ *
+ * Imports `shimmer`/`SHIMMER_GRADIENT` from `src/styles/shimmer` so the
+ * ramp and keyframe are registered once with styled-components and stay
+ * consistent with `SingleProductSkeleton`.
  */
 const ProductGridSkeleton: React.FC<ProductGridSkeletonProps> = ({
   variant = "grid",
@@ -65,16 +65,6 @@ const ProductGridSkeleton: React.FC<ProductGridSkeletonProps> = ({
     </GridContainer>
   );
 };
-
-/* Reusable gradient string for the shimmer. Inlined as a JS const instead
-   of a styled-component interpolation so the same colour ramp appears on
-   every skeleton block without copy-paste in CSS. */
-const SHIMMER_GRADIENT = `linear-gradient(
-  90deg,
-  rgba(204, 152, 110, 0.06) 0%,
-  rgba(204, 152, 110, 0.22) 50%,
-  rgba(204, 152, 110, 0.06) 100%
-)`;
 
 const GridContainer = styled.div`
   display: grid;

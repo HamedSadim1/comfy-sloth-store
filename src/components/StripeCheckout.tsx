@@ -20,6 +20,8 @@ import { useNavigate } from "react-router-dom";
 import { FiLock, FiUser } from "react-icons/fi";
 import { FaCheckCircle, FaCcVisa, FaCcMastercard, FaCcStripe } from "react-icons/fa";
 import type { User } from "@auth0/auth0-react";
+import Eyebrow from "./Eyebrow";
+import Button from "./Button";
 
 // Custom interface for CardElement options to avoid using 'any'
 interface CardStyleOptions {
@@ -82,9 +84,7 @@ const PaymentTrust: React.FC = () => (
   </div>
 );
 
-// Sub-component: payment status block. Pre-payment greets the user and
-// shows the order total; post-payment shows the success state and the
-// auto-redirect countdown.
+// Sub-component: payment status block.
 const PaymentStatus: React.FC<PaymentStatusProps> = ({
   succeeded,
   myUser,
@@ -97,7 +97,7 @@ const PaymentStatus: React.FC<PaymentStatusProps> = ({
         <div className="success-icon" aria-hidden="true">
           <FaCheckCircle />
         </div>
-        <span className="eyebrow success-eyebrow">Payment complete</span>
+        <Eyebrow className="success-eyebrow">Payment complete</Eyebrow>
         <h3>Thank you&mdash;your order is on the way.</h3>
         <p>
           We sent a confirmation to{" "}
@@ -133,7 +133,8 @@ const PaymentStatus: React.FC<PaymentStatusProps> = ({
   );
 };
 
-// Sub-component: the actual card form (CardElement + Pay button)
+// Sub-component: the actual card form (CardElement + Pay button).
+// Pay button uses the shared <Button variant="primary"> primitive.
 const PaymentForm: React.FC<PaymentFormProps> = ({
   cardStyle,
   handleSubmit,
@@ -156,28 +157,30 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         />
       </div>
 
-      <button
+      <Button
         type="submit"
-        className="pay-btn"
+        variant="primary"
+        fullWidth
         disabled={processing || disabled || succeeded}
         id="submit"
-      >
-        <span id="button-text">
-          {processing ? (
+        iconRight={
+          processing ? (
             <InlineSpinner size="sm" />
           ) : succeeded ? (
-            <>
-              <FaCheckCircle aria-hidden="true" />
-              Payment received
-            </>
+            <FaCheckCircle aria-hidden="true" />
           ) : (
-            <>
-              <FiLock aria-hidden="true" />
-              Pay securely
-            </>
-          )}
+            <FiLock aria-hidden="true" />
+          )
+        }
+      >
+        <span id="button-text">
+          {processing
+            ? ""
+            : succeeded
+            ? "Payment received"
+            : "Pay securely"}
         </span>
-      </button>
+      </Button>
 
       <CardError error={error} />
       <ResultMessage succeeded={succeeded} />
@@ -185,7 +188,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   );
 };
 
-// Sub-component: inline error pill (only rendered when error isn't empty)
+// Sub-component: inline error pill
 const CardError: React.FC<CardErrorProps> = ({ error }) => {
   if (!error) return null;
   return (
@@ -195,8 +198,7 @@ const CardError: React.FC<CardErrorProps> = ({ error }) => {
   );
 };
 
-// Sub-component: post-payment link to the Stripe test dashboard so the
-// developer can verify the payment was recorded.
+// Sub-component: post-payment link to the Stripe test dashboard
 const ResultMessage: React.FC<ResultMessageProps> = ({ succeeded }) => {
   return (
     <p className={succeeded ? "result-message" : "result-message hidden"}>
@@ -215,7 +217,7 @@ const ResultMessage: React.FC<ResultMessageProps> = ({ succeeded }) => {
 
 // Main CheckoutForm component
 const CheckoutForm: React.FC = () => {
-  const { cart, totalAmount, shippingFee, clearCart } = useCartContext();
+  const { totalAmount, shippingFee, clearCart } = useCartContext();
   const { myUser } = useUserContext();
   const navigate = useNavigate();
 
@@ -229,32 +231,30 @@ const CheckoutForm: React.FC = () => {
   const stripe = useStripe();
   const elements = useElements();
 
-  // Function to create payment intent, memoized for performance
+  // Function to create payment intent, memoized for performance.
+  // Post-refactor, the server only needs shippingFee + totalAmount;
+  // we no longer send `cart`.
   const createPaymentIntent = useCallback(async () => {
     try {
       const response = await axios.post(
         "/.netlify/functions/create-payment-intent",
         {
-          cart,
           shippingFee,
           totalAmount,
         }
       );
       setClientSecret(response.data.clientSecret);
     } catch (_error) {
-      // Error handling without console.error for production
       setError("Failed to create payment intent. Please try again.");
     }
-  }, [cart, shippingFee, totalAmount]);
+  }, [shippingFee, totalAmount]);
 
   // Effect to create payment intent on mount
   useEffect(() => {
     createPaymentIntent();
   }, [createPaymentIntent]);
 
-  // Modernized card style options for the Stripe CardElement — dark grey
-  // text, family inherited from the app, larger font-size for legibility,
-  // lighter placeholder tint.
+  // Modernized card style options for the Stripe CardElement
   const cardStyle: CardStyleOptions = {
     style: {
       base: {
@@ -311,7 +311,7 @@ const CheckoutForm: React.FC = () => {
     <Wrapper>
       <Card>
         <header className="head">
-          <span className="eyebrow">Payment</span>
+          <Eyebrow>Payment</Eyebrow>
           <h2 className="title">Card details</h2>
           <p className="lede">
             Enter your card details below. Your information is encrypted in
@@ -372,19 +372,6 @@ const Card = styled.section`
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-  }
-
-  .eyebrow {
-    display: inline-block;
-    padding: 0.32rem 0.78rem;
-    background: var(--clr-primary-10);
-    color: var(--clr-primary-2);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    border-radius: var(--radius-full);
-    width: fit-content;
   }
 
   .title {
@@ -620,8 +607,6 @@ const Card = styled.section`
   }
 
   .card-element-wrap {
-    /* The Stripe CardElement renders its own iframe. Wrap it in a styled
-       container so the visible border/bg matches the rest of the form. */
     background: var(--clr-white);
     border: 1px solid rgba(34, 34, 34, 0.12);
     border-radius: var(--radius-md);
@@ -637,60 +622,9 @@ const Card = styled.section`
     box-shadow: 0 0 0 4px rgba(204, 152, 110, 0.15);
   }
 
-  /* The Stripe iframe is what #card-element-input-points to (CardElement
-     internally renders an iframe at the same id we pass). */
   #card-element-input,
   #card-element-input iframe {
     width: 100% !important;
-  }
-
-  .pay-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    margin-top: 1.25rem;
-    padding: 1.05rem 1.5rem;
-    border: none;
-    border-radius: var(--radius-full);
-    background: var(--gradient-accent);
-    color: var(--clr-white);
-    font-family: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0.01em;
-    cursor: pointer;
-    box-shadow: var(--shadow-md);
-    transition:
-      transform 0.3s var(--ease-out),
-      box-shadow 0.3s var(--ease-out),
-      filter 0.3s var(--ease-out);
-
-    svg {
-      width: 1.05rem;
-      height: 1.05rem;
-    }
-
-    &:hover:not(:disabled),
-    &:focus-visible:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-      filter: brightness(1.05);
-      outline: none;
-    }
-
-    &:focus-visible {
-      box-shadow:
-        var(--shadow-lg),
-        0 0 0 3px rgba(204, 152, 110, 0.45);
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      box-shadow: var(--shadow-sm);
-    }
   }
 
   .card-error {
@@ -727,10 +661,6 @@ const Card = styled.section`
   .result-message.hidden {
     display: none;
   }
-
-  /* (Spinner for the Pay button's "processing" state is now the shared
-     <InlineSpinner /> from src/components/Loading.tsx — single source of
-     truth for the brand spinner animation.) */
 
   @media (min-width: 992px) {
     padding: 2.25rem 2rem;

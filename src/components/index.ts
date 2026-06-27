@@ -21,6 +21,10 @@ import CartContent from "./CarContent";
 import PageHero from "./PageHero";
 import StripeCheckout from "./StripeCheckout";
 import TrustStrip from "./TrustStrip";
+import Button from "./Button";
+import Eyebrow from "./Eyebrow";
+import ColorSwatch from "./ColorSwatch";
+
 export {
   FeaturedProducts,
   Navbar,
@@ -45,4 +49,7 @@ export {
   PageHero,
   StripeCheckout,
   TrustStrip,
+  Button,
+  Eyebrow,
+  ColorSwatch,
 };
